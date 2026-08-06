@@ -1,4 +1,4 @@
-import app from "./app";
+import app from "./app.js";
 
 // Start server
 const PORT = 3000;
