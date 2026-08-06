@@ -1,36 +1,41 @@
 {
-  "name": "web-starter",
-  "version": "1.0.0",
-  "description": "dev",
-  "main": "index.js",
-  "type": "module",
-  "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "lint": "echo \"Temporary: lint skipped\""
-  },
-  "vitest": {
-    "environment": "node"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "express": "^5.2.1"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.6",
-    "@types/node": "^26.1.2",
-    "@types/supertest": "^7.2.1",
-    "@vitest/coverage-v8": "^4.1.10",
-    "supertest": "^7.2.2",
-    "tsx": "^4.23.1",
-    "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
-  }
+	"name": "web-starter",
+	"version": "1.0.0",
+	"description": "dev",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"dev": "tsx watch src/index.ts",
+		"build": "tsc",
+		"start": "node dist/index.js",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"lint": "echo \"Temporary: lint skipped\""
+	},
+	"vitest": {
+		"environment": "node"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"express": "^5.2.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.7",
+		"@types/express": "^5.0.6",
+		"@types/node": "^26.1.2",
+		"@types/supertest": "^7.2.1",
+		"@vitest/coverage-v8": "^4.1.10",
+		"supertest": "^7.2.2",
+		"tsx": "^4.23.1",
+		"typescript": "^7.0.2",
+		"vitest": "^4.1.10",
+    "format": "biome format --write .",
+		"lint": "biome lint .",
+		"check": "biome check .",
+		"ci:check": "biome ci .",
+		"lint:fix": "biome lint --write ."
+	}
 }
-

@@ -1,4 +1,5 @@
 import app from "./app";
+
 // Start server
 const PORT = 3000;
 
