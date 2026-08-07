@@ -1,5 +1,7 @@
-import winston, { info } from 'winston';
+import fs from "node:fs";
+import winston from "winston";
 
+fs.mkdirSync("logs", { recursive: true });
 const levels = {
     error: 0,
     warn: 1,
