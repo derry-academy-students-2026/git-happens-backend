@@ -1,3 +1,4 @@
+//server bootstrap, listening only
 import app from "./app.js";
 
 // Start server

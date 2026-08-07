@@ -1,3 +1,4 @@
+// express app setup, middleware and routes only
 import express from "express";
 import morgan from "./config/morganMiddleware.js";
 import logger from "./lib/logger.js";
