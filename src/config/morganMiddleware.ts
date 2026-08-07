@@ -1,4 +1,4 @@
-import morgan, {StreamOptions} from "morgan";
+import morgan, { StreamOptions } from "morgan";
 import logger from "../lib/logger";
 
 const stream: StreamOptions = {
