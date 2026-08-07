@@ -1,5 +1,5 @@
 import express from "express";
-import morgan from "./config/morganMiddleware";
+import morgan from "./config/morganMiddleware.js";
 
 const app = express();
 
