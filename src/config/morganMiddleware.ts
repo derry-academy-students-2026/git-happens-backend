@@ -2,7 +2,7 @@ import morgan, { StreamOptions } from "morgan";
 import logger from "../lib/logger.js";
 
 const stream: StreamOptions = {
-    write: (message) => logger.http(message),
+    write: (message) => logger.http(message.trimEnd()),
 };
 
 const skip = () => {
