@@ -1,6 +1,6 @@
 //creates DTOs
-import type { CapabilityModel } from "./capabilityModels.ts";
-import type { BandModel } from "./bandModels.ts";
+import type { CapabilityModel } from "./capabilityModels.js";
+import type { BandModel } from "./bandModels.js";
 
 // job role as returned by the DAO layer
 export class JobRoleModel {

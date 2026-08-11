@@ -16,8 +16,9 @@ export class JobRolesController {
 			logger.debug(`Fetched ${jobRoles.length} job role(s)`);
 			res.json(jobRoles);
 		} catch (error) {
-			logger.error(`Failed to fetch job roles: ${error}`);
-			next(error);
+			const err = error instanceof Error ? error : new Error(String(error));
+			logger.error(`Failed to fetch job roles: ${err.stack ?? err.message}`);
+			next(err);
 		}
 	}
 }

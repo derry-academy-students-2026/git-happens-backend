@@ -1,4 +1,4 @@
-import type { JobRoleModel, JobRoleResponseModel } from "./jobRoleModels.js";
+import { JobRoleModel, JobRoleResponseModel } from "./jobRoleModels.js";
 // input and output models established
 //jobRoleModel is returned by the DAO
 //JobRoleResponseModel interacts with API
@@ -7,15 +7,15 @@ import type { JobRoleModel, JobRoleResponseModel } from "./jobRoleModels.js";
 export function mapJobRoleToResponseModel(
 	jobRole: JobRoleModel,
 ): JobRoleResponseModel {
-	return {
-		jobRoleId: jobRole.jobRoleId,
-		roleName: jobRole.roleName,
-		location: jobRole.location,
-		capability: jobRole.capability,
-		band: jobRole.band,
-		closingDate: jobRole.closingDate,
-		status: jobRole.status,
-	};
+	return new JobRoleResponseModel(
+		jobRole.jobRoleId,
+		jobRole.roleName,
+		jobRole.location,
+		jobRole.capability,
+		jobRole.band,
+		jobRole.closingDate,
+		jobRole.status,
+	);
 }
 
 // converts an API-facing JobRoleResponseModel back into the DAO-layer JobRoleModel, for update operations
