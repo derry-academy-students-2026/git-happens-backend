@@ -2,7 +2,7 @@
 import app from "./app.js";
 import logger from "./lib/logger.js";
 
-const PORT = 4000;
+const PORT = Number(process.env.PORT) || 4000;
 
 // starts the HTTP server and logs the listening address
 app.listen(PORT, () => {
