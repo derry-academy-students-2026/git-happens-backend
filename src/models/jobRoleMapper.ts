@@ -8,8 +8,8 @@ export function mapJobRoleToResponseModel(jobRole: JobRoleModel): JobRoleRespons
         jobRoleId: jobRole.jobRoleId,
         roleName: jobRole.roleName,
         location: jobRole.location,
-        capabilityId: jobRole.capabilityId,
-        bandId: jobRole.bandId,
+        capability: jobRole.capability,
+        band: jobRole.band,
         closingDate: jobRole.closingDate,
         status: jobRole.status
     }
@@ -21,8 +21,8 @@ export function mapJobRoleToModel(jobRole: JobRoleResponseModel): JobRoleModel {
         jobRoleId: jobRole.jobRoleId,
         roleName: jobRole.roleName,
         location: jobRole.location,
-        capabilityId: jobRole.capabilityId,
-        bandId: jobRole.bandId,
+        capability: jobRole.capability,
+        band: jobRole.band,
         closingDate: jobRole.closingDate,
         status: jobRole.status
     };

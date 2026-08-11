@@ -7,9 +7,7 @@ export class JobRoleModel {
         public readonly jobRoleId: number,
         public readonly roleName: string,
         public readonly location: string,
-        public readonly capabilityId: string,
         public readonly capability: CapabilityModel,
-        public readonly bandId: number,
         public readonly band: BandModel,
         public readonly closingDate: Date,
         public readonly status: Date
@@ -21,9 +19,7 @@ export class JobRoleResponseModel {
         public readonly jobRoleId: number,
         public readonly roleName: string,
         public readonly location: string,
-        public readonly capabilityId: string,
         public readonly capability: CapabilityModel,
-        public readonly bandId: number,
         public readonly band: BandModel,
         public readonly closingDate: Date,
         public readonly status: Date
