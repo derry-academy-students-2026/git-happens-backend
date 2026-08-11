@@ -20,7 +20,7 @@ model JobRole {
   capabilityId       Int
   capability         Capability @relation(fields: [capabilityId], references: [capabilityId])
   bandId             Int
-  band               Band @relation(fields: [bandId], references: [nameId])
+  band               Band @relation(fields: [bandId], references: [bandId])
   closingDate        DateTime @default(now())
   status             String   @default("Open")
 }
