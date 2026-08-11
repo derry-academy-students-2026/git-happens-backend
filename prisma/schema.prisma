@@ -14,12 +14,12 @@ datasource db {
 
 model JobRole {
   jobRoleId          Int      @id @default(autoincrement())
-  roleName        String
-  location String
-  capabilityId        String
-  bandId      Decimal  @db.Decimal(10, 2)
-  closingDate   DateTime @default(now())
-  status   DateTime @updatedAt
+  roleName           String
+  location           String
+  capabilityId       String
+  bandId             Decimal  @db.Decimal(10, 2)
+  closingDate        DateTime @default(now())
+  status             DateTime @updatedAt
 }
 
 model Capability {
