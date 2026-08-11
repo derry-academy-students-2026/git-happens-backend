@@ -25,9 +25,6 @@
 		"db:setup": "npm run env:setup && npm run db:sync && npm run prisma:seed",
 		"prisma:seed": "tsx prisma/seed.ts"
 	},
-	"vitest": {
-		"environment": "node"
-	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
