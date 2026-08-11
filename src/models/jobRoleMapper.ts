@@ -5,19 +5,25 @@ import type { JobRoleModel, JobRoleResponseModel } from "./jobRoleModels.js";
 
 export function mapJobRoleToResponseModel(jobRole: JobRoleModel): JobRoleResponseModel {
     return {
-        id: jobRole.id,
-        title: jobRole.title,
+        jobRoleId: jobRole.jobRoleId,
+        roleName: jobRole.roleName,
         location: jobRole.location,
-        job_code: jobRole.job_code
+        capabilityId: jobRole.capabilityId,
+        bandId: jobRole.bandId,
+        closingDate: jobRole.closingDate,
+        status: jobRole.status
     }
 }
 
 // for reverse mapping for update function
 export function mapJobRoleToModel(jobRole: JobRoleResponseModel): JobRoleModel {
     return {
-        id: jobRole.id,
-        title: jobRole.title,
+        jobRoleId: jobRole.jobRoleId,
+        roleName: jobRole.roleName,
         location: jobRole.location,
-        job_code: jobRole.job_code
+        capabilityId: jobRole.capabilityId,
+        bandId: jobRole.bandId,
+        closingDate: jobRole.closingDate,
+        status: jobRole.status
     };
 }

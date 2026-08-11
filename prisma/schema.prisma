@@ -31,3 +31,4 @@ model Band {
   nameId          Int      @id @default(autoincrement())
   bandName        String
 }
+
