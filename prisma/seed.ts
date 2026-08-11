@@ -42,7 +42,7 @@ async function main() {
 		allCapabilities.map((c: any) => [c.capabilityName, c.capabilityId])
 	);
 	const bandMap = Object.fromEntries(
-		allBands.map((b: any) => [b.bandName, b.nameId])
+		allBands.map((b: any) => [b.bandName, b.bandId])
 	);
 
 	const closingDate1 = new Date("2024-09-30");

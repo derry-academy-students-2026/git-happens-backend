@@ -16,7 +16,7 @@ export class JobRoleDao {
                     jobRole.roleName,
                     jobRole.location,
                     new CapabilityModel(jobRole.capability.capabilityId, jobRole.capability.capabilityName),
-                    new BandModel(jobRole.band.nameId, jobRole.band.bandName),
+                    new BandModel(jobRole.band.bandId, jobRole.band.bandName),
                     jobRole.closingDate,
                     jobRole.status
                 )

@@ -27,13 +27,13 @@ model JobRole {
 
 model Capability {
   capabilityId       Int      @id @default(autoincrement())
-  capabilityName     String
+  capabilityName     String   @unique
   jobRoles           JobRole[]
 }
 
 model Band {
   bandId             Int      @id @default(autoincrement())
-  bandName           String
+  bandName           String   @unique
   jobRoles           JobRole[]
 }
 
