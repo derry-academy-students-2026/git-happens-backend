@@ -3,6 +3,8 @@ import express from "express";
 import morgan from "./config/morganMiddleware.js";
 import logger from "./lib/logger.js";
 import jobRoleRouter from "./routes/jobRoleRouter.js";
+import capabilityRouter from "./routes/capabilityRouter.js";
+import bandRouter from "./routes/bandRouter.js";
 
 const app = express();
 
@@ -11,6 +13,8 @@ app.use(express.json());
 
 //morgan logging for HTTP requests
 app.use(morgan);
+app.use("/capabilities", capabilityRouter);
+app.use("/bands", bandRouter);
 
 app.use("/job-roles", jobRoleRouter);
 
