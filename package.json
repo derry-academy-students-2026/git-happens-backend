@@ -18,7 +18,7 @@
 		"ci:check": "biome ci .",
 		"lint:fix": "biome lint --write .",
 		"postinstall": "npx prisma generate",
-		"env:setup": "[ -f .env ] || echo 'DATABASE_URL=\"postgresql://postgres:password@localhost:5431/job-board\"' > .env",
+		"env:setup": "[ -f .env ] || echo 'DATABASE_URL=\"postgresql://postgres:password@localhost:5432/job-board\"' > .env",
 		"db:migrate": "npx prisma migrate dev",
 		"db:sync": "npm run env:setup && npx prisma generate && npx prisma migrate deploy",
 		"db:reset": "npx prisma migrate reset --force; npm run prisma:seed",
