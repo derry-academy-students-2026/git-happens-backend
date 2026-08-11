@@ -16,6 +16,9 @@
 		"check": "biome check .",
 		"ci:check": "biome ci .",
 		"lint:fix": "biome lint --write .",
+		"env:setup": "[ -f .env ] || echo 'DATABASE_URL=\"postgresql://postgres:password@localhost:5431/job-board\"' > .env",
+		"db:reset": "npx prisma migrate reset --force; npm run prisma:seed",
+		"db:setup": "npm run env:setup; npx prisma generate; npx prisma migrate deploy; npm run prisma:seed",
 		"prisma:seed": "tsx prisma/seed.ts"
 	},
 	"vitest": {

@@ -8,4 +8,3 @@ jobRoleRouter.get("/", (req, res, next) => jobRolesController.getJobRoles(req, r
 jobRoleRouter.get("/:id", (req, res, next) => jobRolesController.getJobRoles(req, res, next));
 
 export default jobRoleRouter;
-  
