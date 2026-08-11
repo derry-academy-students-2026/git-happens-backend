@@ -38,7 +38,9 @@ describe("JobRoleDao.getJobRoles", () => {
 		const dao = new JobRoleDao();
 		const result = await dao.getJobRoles();
 
-		expect(findMany).toHaveBeenCalledWith({ include: { capability: true, band: true } });
+		expect(findMany).toHaveBeenCalledWith({
+			include: { capability: true, band: true },
+		});
 		expect(result).toEqual([
 			new JobRoleModel(
 				1,

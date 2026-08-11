@@ -8,9 +8,19 @@ import { BandModel } from "../../src/models/bandModels.js";
 
 const capability = new CapabilityModel(1, "Software Engineering");
 const band = new BandModel(2, "Band 3 - Senior");
-const jobRole = new JobRoleResponseModel(1, "Software Engineer", "Remote", capability, band, new Date("2024-09-30"), "Open");
+const jobRole = new JobRoleResponseModel(
+	1,
+	"Software Engineer",
+	"Remote",
+	capability,
+	band,
+	new Date("2024-09-30"),
+	"Open",
+);
 
-function createFakeService(getJobRoles: ReturnType<typeof vi.fn>): JobRoleService {
+function createFakeService(
+	getJobRoles: ReturnType<typeof vi.fn>,
+): JobRoleService {
 	return { getJobRoles } as unknown as JobRoleService;
 }
 

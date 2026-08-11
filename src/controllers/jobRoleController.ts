@@ -1,16 +1,23 @@
 import type { NextFunction, Request, Response } from "express";
-import {jobRoleService} from "../services/jobRoleService.js";
+import logger from "../lib/logger.js";
+import { jobRoleService } from "../services/jobRoleService.js";
 
 export class JobRolesController {
-    constructor(private service = jobRoleService) {}
+	constructor(private service = jobRoleService) {}
 
-    async getJobRoles(_req: Request, res: Response, next: NextFunction): Promise<void> {
-        
-        try {
-            const jobRoles = await this.service.getJobRoles();
-            res.json(jobRoles);
-        } catch (error) {
-            next(error);
-        }
-    }
+	// handles GET /job-roles and GET /job-roles/:id, responding with the full job role list
+	async getJobRoles(
+		_req: Request,
+		res: Response,
+		next: NextFunction,
+	): Promise<void> {
+		try {
+			const jobRoles = await this.service.getJobRoles();
+			logger.debug(`Fetched ${jobRoles.length} job role(s)`);
+			res.json(jobRoles);
+		} catch (error) {
+			logger.error(`Failed to fetch job roles: ${error}`);
+			next(error);
+		}
+	}
 }

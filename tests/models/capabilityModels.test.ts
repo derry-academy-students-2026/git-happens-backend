@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { CapabilityModel, CapabilityResponseModel } from "../../src/models/capabilityModels.js";
+import {
+	CapabilityModel,
+	CapabilityResponseModel,
+} from "../../src/models/capabilityModels.js";
 
 describe("CapabilityModel", () => {
 	it("assigns constructor arguments to readonly properties", () => {
