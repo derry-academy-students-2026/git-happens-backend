@@ -17,19 +17,23 @@ model JobRole {
   jobRoleId          Int      @id @default(autoincrement())
   roleName           String
   location           String
-  capabilityId       String
+  capabilityId       Int
+  capability         Capability @relation(fields: [capabilityId], references: [capabilityId])
   bandId             Int
+  band               Band @relation(fields: [bandId], references: [nameId])
   closingDate        DateTime @default(now())
   status             String   @default("Open")
 }
 
 model Capability {
-  capabilityId          Int      @id @default(autoincrement())
-  capabilityName        String
+  capabilityId       Int      @id @default(autoincrement())
+  capabilityName     String
+  jobRoles           JobRole[]
 }
 
 model Band {
-  nameId          Int      @id @default(autoincrement())
-  bandName        String
+  bandId             Int      @id @default(autoincrement())
+  bandName           String
+  jobRoles           JobRole[]
 }
 

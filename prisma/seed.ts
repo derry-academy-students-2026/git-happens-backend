@@ -39,7 +39,7 @@ async function main() {
 
 	// Create a map for easier lookup
 	const capabilityMap = Object.fromEntries(
-		allCapabilities.map((c: any) => [c.capabilityName, c.capabilityId.toString()])
+		allCapabilities.map((c: any) => [c.capabilityName, c.capabilityId])
 	);
 	const bandMap = Object.fromEntries(
 		allBands.map((b: any) => [b.bandName, b.nameId])

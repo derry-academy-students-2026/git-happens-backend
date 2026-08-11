@@ -10,7 +10,7 @@ export class JobRoleModel {
         public readonly capability: CapabilityModel,
         public readonly band: BandModel,
         public readonly closingDate: Date,
-        public readonly status: Date
+        public readonly status: string
     ) {} // insert validation logic here
 }
 
@@ -22,6 +22,6 @@ export class JobRoleResponseModel {
         public readonly capability: CapabilityModel,
         public readonly band: BandModel,
         public readonly closingDate: Date,
-        public readonly status: Date
+        public readonly status: string
     ) {} // validation logic here
 }
