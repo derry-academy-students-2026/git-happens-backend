@@ -23,7 +23,8 @@
 		"db:sync": "npm run env:setup && npx prisma generate && npx prisma migrate deploy",
 		"db:reset": "npx prisma migrate reset --force; npm run prisma:seed",
 		"db:setup": "npm run env:setup && npm run db:sync && npm run prisma:seed",
-		"prisma:seed": "tsx prisma/seed.ts"
+		"prisma:seed": "tsx prisma/seed.ts",
+		"ci": "echo 'CI check not implemented yet'"
 	},
 	"keywords": [],
 	"author": "",
