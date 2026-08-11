@@ -1,11 +1,12 @@
-import { PrismaClient } from "@prisma/client";
-import { Decimal } from "@prisma/client/runtime/library";
+import "dotenv/config";
+import { PrismaClient } from "../src/generated/prisma/client.js";
 
+// PrismaClient works fine with v6
 const prisma = new PrismaClient();
 
 async function main() {
 	// Create capabilities first
-	const capabilities = await prisma.capability.createMany({
+	await prisma.capability.createMany({
 		data: [
 			{ capabilityName: "Administration" },
 			{ capabilityName: "Workday HCM" },
@@ -20,7 +21,7 @@ async function main() {
 	});
 
 	// Create bands
-	const bands = await prisma.band.createMany({
+	await prisma.band.createMany({
 		data: [
 			{ bandName: "Band 1 - Associate" },
 			{ bandName: "Band 2 - Mid-Level" },
@@ -38,17 +39,17 @@ async function main() {
 
 	// Create a map for easier lookup
 	const capabilityMap = Object.fromEntries(
-		allCapabilities.map((c) => [c.capabilityName, c.capabilityId.toString()])
+		allCapabilities.map((c: any) => [c.capabilityName, c.capabilityId.toString()])
 	);
 	const bandMap = Object.fromEntries(
-		allBands.map((b) => [b.bandName, new Decimal(b.nameId)])
+		allBands.map((b: any) => [b.bandName, b.nameId])
 	);
 
 	const closingDate1 = new Date("2024-09-30");
 	const closingDate2 = new Date("2024-10-15");
 	const closingDate3 = new Date("2024-11-30");
 
-	await prisma.jobrole.createMany({
+	await prisma.jobRole.createMany({
 		data: [
 			{ 
                 roleName: "Executive Assistant", 

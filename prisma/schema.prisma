@@ -10,6 +10,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model JobRole {
@@ -17,9 +18,9 @@ model JobRole {
   roleName           String
   location           String
   capabilityId       String
-  bandId             Decimal  @db.Decimal(10, 2)
+  bandId             Int
   closingDate        DateTime @default(now())
-  status             DateTime @updatedAt
+  status             String   @default("Open")
 }
 
 model Capability {
