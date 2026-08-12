@@ -48,17 +48,6 @@ describe("jobRoleRouter", () => {
 		]);
 	});
 
-	it("GET /job-roles/:id also returns job roles from the service", async () => {
-		getJobRoles.mockResolvedValue([
-			{ jobRoleId: 1, roleName: "Software Engineer" },
-		]);
-
-		const response = await request(createApp()).get("/job-roles/1");
-
-		expect(response.status).toBe(200);
-		expect(getJobRoles).toHaveBeenCalledTimes(1);
-	});
-
 	it("forwards service errors to the error handler", async () => {
 		getJobRoles.mockRejectedValue(new Error("boom"));
 

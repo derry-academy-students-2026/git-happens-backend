@@ -13,7 +13,9 @@ import { JobRoleService } from "../../src/services/jobRoleService.js";
 import { CapabilityModel } from "../../src/models/capabilityModels.js";
 import { BandModel } from "../../src/models/bandModels.js";
 
-const findMany = prisma.jobRole.findMany as unknown as ReturnType<typeof vi.fn>;
+const findMany = prisma.jobRole.findMany as unknown as ReturnType<
+	typeof vi.fn
+>;
 
 const capability = new CapabilityModel(1, "Software Engineering");
 const band = new BandModel(2, "Band 3 - Senior");
@@ -40,7 +42,9 @@ describe("JobRoleService.getJobRoles", () => {
 		const service = new JobRoleService();
 		const result = await service.getJobRoles();
 
-		expect(findMany).toHaveBeenCalledWith({ include: { capability: true, band: true } });
+		expect(findMany).toHaveBeenCalledWith({
+			include: { capability: true, band: true },
+		});
 		expect(result).toEqual([
 			{
 				jobRoleId: 1,
