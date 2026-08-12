@@ -3,7 +3,9 @@ import { JobRoleModel, JobRoleResponseModel } from "./jobRoleModels.js";
 //jobRoleModel is returned by the DAO
 //JobRoleResponseModel interacts with API
 
-// converts a DAO-layer JobRoleModel into the API-facing JobRoleResponseModel
+/**
+ * Converts a DAO-layer JobRoleModel into the API-facing JobRoleResponseModel.
+ */
 export function mapJobRoleToResponseModel(
 	jobRole: JobRoleModel,
 ): JobRoleResponseModel {
@@ -18,15 +20,18 @@ export function mapJobRoleToResponseModel(
 	);
 }
 
-// converts an API-facing JobRoleResponseModel back into the DAO-layer JobRoleModel, for update operations
+/**
+ * Converts an API-facing JobRoleResponseModel back into the DAO-layer
+ * JobRoleModel, for update operations.
+ */
 export function mapJobRoleToModel(jobRole: JobRoleResponseModel): JobRoleModel {
-	return {
-		jobRoleId: jobRole.jobRoleId,
-		roleName: jobRole.roleName,
-		location: jobRole.location,
-		capability: jobRole.capability,
-		band: jobRole.band,
-		closingDate: jobRole.closingDate,
-		status: jobRole.status,
-	};
+	return new JobRoleModel(
+		jobRole.jobRoleId,
+		jobRole.roleName,
+		jobRole.location,
+		jobRole.capability,
+		jobRole.band,
+		jobRole.closingDate,
+		jobRole.status,
+	);
 }

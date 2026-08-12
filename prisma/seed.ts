@@ -1,4 +1,5 @@
 import "dotenv/config";
+import type { Capability, Band } from "../src/generated/prisma/models.js";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 
 // PrismaClient works fine with v6
@@ -34,16 +35,18 @@ async function main() {
 	});
 
 	// Fetch all capabilities and bands to get their IDs
-	const allCapabilities = await prisma.capability.findMany();
-	const allBands = await prisma.band.findMany();
+	const allCapabilities: Capability[] = await prisma.capability.findMany();
+	const allBands: Band[] = await prisma.band.findMany();
 
 	// Create a map for easier lookup
 	const capabilityMap = Object.fromEntries(
-		allCapabilities.map((c: any) => [c.capabilityName, c.capabilityId.toString()])
+		allCapabilities.map((c: Capability) => [
+			c.capabilityName,
+			c.capabilityId.toString(),
+		]),
 	);
 	const bandMap = Object.fromEntries(
-		allBands.map((b: any) => [b.bandName, b.nameId])
-	);
+		allBands.map((b: Band) => [b.bandName, b.bandId]),
 
 	const closingDate1 = new Date("2024-09-30");
 	const closingDate2 = new Date("2024-10-15");
@@ -51,110 +54,110 @@ async function main() {
 
 	await prisma.jobRole.createMany({
 		data: [
-			{ 
-                roleName: "Executive Assistant", 
-                location: "New York, NY",
-                capabilityId: capabilityMap["Administration"],
-                bandId: bandMap["Band 2 - Mid-Level"],
-                closingDate: closingDate1,
-                status: "Open"
-            },
-			{ 
-                roleName: "Account Executive Assistant, Workday Services", 
-                location: "San Francisco, CA",
-                capabilityId: capabilityMap["Administration"],
-                bandId: bandMap["Band 2 - Mid-Level"],
-                closingDate: closingDate1,
-                status: "Open"
-            },
-			{ 
-                roleName: "Workday HCM Consultant", 
-                location: "Austin, TX",
-                capabilityId: capabilityMap["Workday HCM"],
-                bandId: bandMap["Band 3 - Senior"],
-                closingDate: closingDate2,
-                status: "Open"
-            },
-			{ 
-                roleName: "UX Designer", 
-                location: "Seattle, WA",
-                capabilityId: capabilityMap["UX/Design"],
-                bandId: bandMap["Band 2 - Mid-Level"],
-                closingDate: closingDate2,
-                status: "Open"
-            },
-			{ 
-                roleName: "Senior Dynamics 365 Engineer", 
-                location: "Chicago, IL",
-                capabilityId: capabilityMap["Dynamics 365"],
-                bandId: bandMap["Band 3 - Senior"],
-                closingDate: closingDate3,
-                status: "Open"
-            },
-			{ 
-                roleName: "Software Engineer", 
-                location: "Remote",
-                capabilityId: capabilityMap["Software Engineering"],
-                bandId: bandMap["Band 1 - Associate"],
-                closingDate: closingDate1,
-                status: "Open"
-            },
-			{ 
-                roleName: "Senior Software Engineer", 
-                location: "Remote",
-                capabilityId: capabilityMap["Software Engineering"],
-                bandId: bandMap["Band 3 - Senior"],
-                closingDate: closingDate2,
-                status: "Open"
-            },
-			{ 
-                roleName: "Lead Software Engineer", 
-                location: "Boston, MA",
-                capabilityId: capabilityMap["Software Engineering"],
-                bandId: bandMap["Band 4 - Lead"],
-                closingDate: closingDate3,
-                status: "Open"
-            },
-			{ 
-                roleName: "Principal Software Engineer", 
-                location: "San Francisco, CA",
-                capabilityId: capabilityMap["Software Engineering"],
-                bandId: bandMap["Band 5 - Principal"],
-                closingDate: closingDate3,
-                status: "Open"
-            },
-			{ 
-                roleName: "Technical Architect", 
-                location: "Denver, CO",
-                capabilityId: capabilityMap["Architecture"],
-                bandId: bandMap["Band 4 - Lead"],
-                closingDate: closingDate3,
-                status: "Open"
-            },
-			{ 
-                roleName: "Product Owner", 
-                location: "Portland, OR",
-                capabilityId: capabilityMap["Product Management"],
-                bandId: bandMap["Band 3 - Senior"],
-                closingDate: closingDate2,
-                status: "Open"
-            },
-			{ 
-                roleName: "Workday EDM Consultant", 
-                location: "Atlanta, GA",
-                capabilityId: capabilityMap["Workday EDM"],
-                bandId: bandMap["Band 3 - Senior"],
-                closingDate: closingDate2,
-                status: "Open"
-            },
-			{ 
-                roleName: "Product Manager - Workday Products", 
-                location: "San Francisco, CA",
-                capabilityId: capabilityMap["Product Management"],
-                bandId: bandMap["Band 4 - Lead"],
-                closingDate: closingDate3,
-                status: "Open"
-            },
+			{
+				roleName: "Executive Assistant",
+				location: "New York, NY",
+				capabilityId: capabilityMap["Administration"],
+				bandId: bandMap["Band 2 - Mid-Level"],
+				closingDate: closingDate1,
+				status: "Open",
+			},
+			{
+				roleName: "Account Executive Assistant, Workday Services",
+				location: "San Francisco, CA",
+				capabilityId: capabilityMap["Administration"],
+				bandId: bandMap["Band 2 - Mid-Level"],
+				closingDate: closingDate1,
+				status: "Open",
+			},
+			{
+				roleName: "Workday HCM Consultant",
+				location: "Austin, TX",
+				capabilityId: capabilityMap["Workday HCM"],
+				bandId: bandMap["Band 3 - Senior"],
+				closingDate: closingDate2,
+				status: "Open",
+			},
+			{
+				roleName: "UX Designer",
+				location: "Seattle, WA",
+				capabilityId: capabilityMap["UX/Design"],
+				bandId: bandMap["Band 2 - Mid-Level"],
+				closingDate: closingDate2,
+				status: "Open",
+			},
+			{
+				roleName: "Senior Dynamics 365 Engineer",
+				location: "Chicago, IL",
+				capabilityId: capabilityMap["Dynamics 365"],
+				bandId: bandMap["Band 3 - Senior"],
+				closingDate: closingDate3,
+				status: "Open",
+			},
+			{
+				roleName: "Software Engineer",
+				location: "Remote",
+				capabilityId: capabilityMap["Software Engineering"],
+				bandId: bandMap["Band 1 - Associate"],
+				closingDate: closingDate1,
+				status: "Open",
+			},
+			{
+				roleName: "Senior Software Engineer",
+				location: "Remote",
+				capabilityId: capabilityMap["Software Engineering"],
+				bandId: bandMap["Band 3 - Senior"],
+				closingDate: closingDate2,
+				status: "Open",
+			},
+			{
+				roleName: "Lead Software Engineer",
+				location: "Boston, MA",
+				capabilityId: capabilityMap["Software Engineering"],
+				bandId: bandMap["Band 4 - Lead"],
+				closingDate: closingDate3,
+				status: "Open",
+			},
+			{
+				roleName: "Principal Software Engineer",
+				location: "San Francisco, CA",
+				capabilityId: capabilityMap["Software Engineering"],
+				bandId: bandMap["Band 5 - Principal"],
+				closingDate: closingDate3,
+				status: "Open",
+			},
+			{
+				roleName: "Technical Architect",
+				location: "Denver, CO",
+				capabilityId: capabilityMap["Architecture"],
+				bandId: bandMap["Band 4 - Lead"],
+				closingDate: closingDate3,
+				status: "Open",
+			},
+			{
+				roleName: "Product Owner",
+				location: "Portland, OR",
+				capabilityId: capabilityMap["Product Management"],
+				bandId: bandMap["Band 3 - Senior"],
+				closingDate: closingDate2,
+				status: "Open",
+			},
+			{
+				roleName: "Workday EDM Consultant",
+				location: "Atlanta, GA",
+				capabilityId: capabilityMap["Workday EDM"],
+				bandId: bandMap["Band 3 - Senior"],
+				closingDate: closingDate2,
+				status: "Open",
+			},
+			{
+				roleName: "Product Manager - Workday Products",
+				location: "San Francisco, CA",
+				capabilityId: capabilityMap["Product Management"],
+				bandId: bandMap["Band 4 - Lead"],
+				closingDate: closingDate3,
+				status: "Open",
+			},
 		],
 		skipDuplicates: true,
 	});

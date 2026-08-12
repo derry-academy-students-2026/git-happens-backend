@@ -25,7 +25,10 @@ function createFakeService(
 }
 
 function createMockResponse(): Response {
-	return { json: vi.fn() } as unknown as Response;
+	return {
+		json: vi.fn(),
+		status: vi.fn().mockReturnThis(),
+	} as unknown as Response;
 }
 
 describe("JobRolesController.getJobRoles", () => {
@@ -54,3 +57,5 @@ describe("JobRolesController.getJobRoles", () => {
 		expect(res.json).not.toHaveBeenCalled();
 	});
 });
+
+
