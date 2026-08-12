@@ -1,5 +1,7 @@
 import "dotenv/config";
+import argon2 from "argon2";
 import { PrismaClient } from "../src/generated/prisma/client.js";
+import type { Capability, Band } from "../src/generated/prisma/client.js";
 
 // PrismaClient works fine with v6
 const prisma = new PrismaClient();
@@ -33,16 +35,25 @@ async function main() {
 		skipDuplicates: true,
 	});
 
+	// Create user roles
+	await prisma.userRole.createMany({
+		data: [
+			{ roleName: "USER" },
+			{ roleName: "ADMIN" },
+		],
+		skipDuplicates: true,
+	});
+
 	// Fetch all capabilities and bands to get their IDs
 	const allCapabilities = await prisma.capability.findMany();
 	const allBands = await prisma.band.findMany();
 
 	// Create a map for easier lookup
 	const capabilityMap = Object.fromEntries(
-		allCapabilities.map((c: any) => [c.capabilityName, c.capabilityId]),
+		allCapabilities.map((c: Capability) => [c.capabilityName, c.capabilityId]),
 	);
 	const bandMap = Object.fromEntries(
-		allBands.map((b: any) => [b.bandName, b.bandId]),
+		allBands.map((b: Band) => [b.bandName, b.bandId]),
 	);
 
 	const closingDate1 = new Date("2024-09-30");
@@ -157,6 +168,20 @@ async function main() {
 			},
 		],
 		skipDuplicates: true,
+	});
+
+	const passwordHash = await argon2.hash("password123"); // e.g. for example seed user
+
+	await prisma.user.upsert({
+		where: { email: "test@example.com" },
+		update: { passwordHash },
+		create: {
+			email: "test@example.com",
+			passwordHash,
+            role: {
+                connect: { roleName: "USER" }, // Assign a role to the user, e.g., "USER" or "ADMIN"
+            },
+		},
 	});
 }
 
