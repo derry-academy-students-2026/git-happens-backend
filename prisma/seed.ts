@@ -46,7 +46,8 @@ async function main() {
 		]),
 	);
 	const bandMap = Object.fromEntries(
-		allBands.map((b: Band) => [b.bandName, b.bandId]),
+		allBands.map((b: Band) => [b.bandName, b.bandId])
+	);
 
 	const closingDate1 = new Date("2024-09-30");
 	const closingDate2 = new Date("2024-10-15");
