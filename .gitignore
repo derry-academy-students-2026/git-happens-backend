@@ -45,3 +45,5 @@ Thumbs.db
 .claude/skills/
 .windsurf/skills/
 skills-lock.json
+
+.github/copilot-instructions.md
