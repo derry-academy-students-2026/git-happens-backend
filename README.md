@@ -12,6 +12,10 @@ Team2 Backend — Express + TypeScript API for the Git Happens project.
 ```bash
 cd git-happens-backend
 npm install
+
+docker run --name job-board-db -e POSTGRES_PASSWORD=password -e POSTGRES_DB=job-board -p 5432:5432 -d postgres
+npm run db:migrate
+npm run db:setup
 ```
 
 ## Run

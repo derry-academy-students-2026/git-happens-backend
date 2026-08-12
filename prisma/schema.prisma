@@ -1,0 +1,45 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model JobRole {
+  jobRoleId          Int      @id @default(autoincrement())
+  roleName           String
+  location           String
+  capabilityId       Int
+  capability         Capability @relation(fields: [capabilityId], references: [capabilityId])
+  bandId             Int
+  band               Band @relation(fields: [bandId], references: [bandId])
+  closingDate        DateTime @default(now())
+  status             String   @default("Open")
+}
+
+model Capability {
+  capabilityId       Int      @id @default(autoincrement())
+  capabilityName     String   @unique
+  jobRoles           JobRole[]
+}
+
+model Band {
+  bandId             Int      @id @default(autoincrement())
+  bandName           String   @unique
+  jobRoles           JobRole[]
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}

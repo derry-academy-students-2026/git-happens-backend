@@ -37,3 +37,11 @@ Thumbs.db
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
+/src/generated/prisma
+
+#Other
+/code_reviews
+.agent/skills/
+.claude/skills/
+.windsurf/skills/
+skills-lock.json

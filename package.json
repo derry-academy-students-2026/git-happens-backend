@@ -6,8 +6,9 @@
 	"type": "module",
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
-		"build": "tsc",
-		"start": "node dist/index.js",
+		"predev": "npm run db:sync",
+		"build": "tsc --noEmit",
+		"start": "tsx src/index.ts",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
@@ -15,15 +16,22 @@
 		"lint": "biome lint .",
 		"check": "biome check .",
 		"ci:check": "biome ci .",
-		"lint:fix": "biome lint --write ."
-	},
-	"vitest": {
-		"environment": "node"
+		"lint:fix": "biome lint --write .",
+		"postinstall": "npx prisma generate",
+		"env:setup": "[ -f .env ] || echo 'DATABASE_URL=\"postgresql://postgres:password@localhost:5432/job-board\"' > .env",
+		"db:migrate": "npx prisma migrate dev",
+		"db:sync": "npm run env:setup && npx prisma generate && npx prisma migrate deploy",
+		"db:reset": "npx prisma migrate reset --force && npm run prisma:seed",
+		"db:setup": "npm run env:setup && npm run db:sync && npm run prisma:seed",
+		"prisma:seed": "tsx prisma/seed.ts",
+		"ci": "echo 'CI check not implemented yet'"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
+		"@prisma/client": "^6.15.0",
+		"dotenv": "^16.6.1",
 		"express": "^5.2.1",
 		"winston": "^3.19.0"
 	},
@@ -35,6 +43,7 @@
 		"@types/supertest": "^7.2.1",
 		"@vitest/coverage-v8": "^4.1.10",
 		"morgan": "^1.10.0",
+		"prisma": "^6.15.0",
 		"supertest": "^7.2.2",
 		"tsx": "^4.23.1",
 		"typescript": "^7.0.2",

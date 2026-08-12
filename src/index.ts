@@ -1,9 +1,11 @@
+//server bootstrap, listening only
 import app from "./app.js";
+import logger from "./lib/logger.js";
 
-// Start server
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 4000;
 
+// starts the HTTP server and logs the listening address
 app.listen(PORT, () => {
-	console.log(`Server running on http://localhost:${PORT}`);
-	console.log(`Health: http://localhost:${PORT}/health`);
+	logger.info(`Server running on http://localhost:${PORT}`);
+	logger.info(`Health: http://localhost:${PORT}/health`);
 });
