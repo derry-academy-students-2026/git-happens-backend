@@ -62,6 +62,7 @@ async function main() {
 		data: [{ roleName: "user" }, { roleName: "admin" }],
 		skipDuplicates: true,
 	});
+
 	const bandMap = Object.fromEntries(
 		allBands.map((b: BandModel) => [b.bandName, b.bandId]),
 	);
