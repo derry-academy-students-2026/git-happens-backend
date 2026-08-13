@@ -1,4 +1,5 @@
 import "dotenv/config";
+import argon2 from "argon2";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import type {
 	BandModel,
@@ -55,7 +56,12 @@ async function main() {
 			c.capabilityName,
 			c.capabilityId,
 		]),
-	);
+    );
+	// Create auth roles used by login and registration tickets.
+	await prisma.userRole.createMany({
+		data: [{ roleName: "user" }, { roleName: "admin" }],
+		skipDuplicates: true,
+	});
 	const bandMap = Object.fromEntries(
 		allBands.map((b: BandModel) => [b.bandName, b.bandId]),
 	);
@@ -264,6 +270,19 @@ async function main() {
 			},
 		],
 		skipDuplicates: true,
+	});
+
+	// Seed an example login user with an argon2 password hash.
+	const passwordHash = await argon2.hash("password123!");
+
+	await prisma.user.upsert({
+		where: { email: "test1@example.com" },
+		update: { passwordHash },
+		create: {
+			email: "test1@example.com",
+			passwordHash,
+			role: { connect: { roleName: "user" } },
+		},
 	});
 }
 
