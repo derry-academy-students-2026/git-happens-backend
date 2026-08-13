@@ -1,4 +1,4 @@
-export class RegisterUserRequestModel {
+export class UserRequestModel {
 	constructor(
 		public readonly email: string,
 		public readonly password: string,
