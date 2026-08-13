@@ -45,4 +45,13 @@ Thumbs.db
 .claude/skills/
 .windsurf/skills/
 skills-lock.json
+<<<<<<< HEAD
+<<<<<<< HEAD
+
+.github/copilot-instructions.md
+=======
 code_reviews/
+>>>>>>> 027caac (Login registration prerequisites (#9))
+=======
+code_reviews/
+>>>>>>> origin
