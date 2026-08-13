@@ -4,7 +4,7 @@ import {
 	AuthValidationError,
 	authService,
 } from "../services/authService.js";
-import { RegisterUserRequestModel } from "../models/authModels.js";
+import { UserRequestModel } from "../models/authModels.js";
 import logger from "../lib/logger.js";
 
 export class AuthController {
@@ -19,7 +19,7 @@ export class AuthController {
 		next: NextFunction,
 	): Promise<void> {
 		try {
-			const requestModel = new RegisterUserRequestModel(
+			const requestModel = new UserRequestModel(
 				String(req.body?.email ?? ""),
 				String(req.body?.password ?? ""),
 			);
