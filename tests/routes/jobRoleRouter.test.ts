@@ -16,7 +16,6 @@ const getJobRoles = jobRoleService.getJobRoles as unknown as ReturnType<
 function createApp() {
 	const app = express();
 	app.use("/job-roles", jobRoleRouter);
-	// biome-ignore lint: minimal error handler needed to assert on forwarded errors
 	app.use(
 		(
 			err: unknown,

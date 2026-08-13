@@ -1,4 +1,5 @@
 import "dotenv/config";
+import argon2 from "argon2";
 import type { Capability, Band } from "../src/generated/prisma/models.js";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 
@@ -34,16 +35,19 @@ async function main() {
 		skipDuplicates: true,
 	});
 
+	// Create auth roles used by login and registration tickets.
+	await prisma.userRole.createMany({
+		data: [{ roleName: "user" }, { roleName: "admin" }],
+		skipDuplicates: true,
+	});
+
 	// Fetch all capabilities and bands to get their IDs
 	const allCapabilities: Capability[] = await prisma.capability.findMany();
 	const allBands: Band[] = await prisma.band.findMany();
 
 	// Create a map for easier lookup
 	const capabilityMap = Object.fromEntries(
-		allCapabilities.map((c: Capability) => [
-			c.capabilityName,
-			c.capabilityId.toString(),
-		]),
+		allCapabilities.map((c: Capability) => [c.capabilityName, c.capabilityId]),
 	);
 	const bandMap = Object.fromEntries(
 		allBands.map((b: Band) => [b.bandName, b.bandId])
@@ -58,7 +62,7 @@ async function main() {
 			{
 				roleName: "Executive Assistant",
 				location: "New York, NY",
-				capabilityId: capabilityMap["Administration"],
+				capabilityId: capabilityMap.Administration,
 				bandId: bandMap["Band 2 - Mid-Level"],
 				closingDate: closingDate1,
 				status: "Open",
@@ -66,7 +70,7 @@ async function main() {
 			{
 				roleName: "Account Executive Assistant, Workday Services",
 				location: "San Francisco, CA",
-				capabilityId: capabilityMap["Administration"],
+				capabilityId: capabilityMap.Administration,
 				bandId: bandMap["Band 2 - Mid-Level"],
 				closingDate: closingDate1,
 				status: "Open",
@@ -130,7 +134,7 @@ async function main() {
 			{
 				roleName: "Technical Architect",
 				location: "Denver, CO",
-				capabilityId: capabilityMap["Architecture"],
+				capabilityId: capabilityMap.Architecture,
 				bandId: bandMap["Band 4 - Lead"],
 				closingDate: closingDate3,
 				status: "Open",
@@ -161,6 +165,19 @@ async function main() {
 			},
 		],
 		skipDuplicates: true,
+	});
+
+	// Seed an example login user with an argon2 password hash.
+	const passwordHash = await argon2.hash("password123!");
+
+	await prisma.user.upsert({
+		where: { email: "test1@example.com" },
+		update: { passwordHash },
+		create: {
+			email: "test1@example.com",
+			passwordHash,
+			role: { connect: { roleName: "user" } },
+		},
 	});
 }
 

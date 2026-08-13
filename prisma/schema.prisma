@@ -37,9 +37,18 @@ model Band {
   jobRoles           JobRole[]
 }
 
+model UserRole {
+  roleId             Int      @id @default(autoincrement())
+  roleName           String   @unique
+  users              User[]
+}
+
 model User {
   id           Int      @id @default(autoincrement())
   email        String   @unique
   passwordHash String
+  roleId       Int
+  role         UserRole @relation(fields: [roleId], references: [roleId])
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
