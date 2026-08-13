@@ -18,7 +18,7 @@
 		"ci:check": "biome ci .",
 		"lint:fix": "biome lint --write .",
 		"postinstall": "npx prisma generate",
-		"env:setup": "[ -f .env ] || echo 'DATABASE_URL=\"postgresql://postgres:password@localhost:5432/job-board\"' > .env",
+		"env:setup": "[ -f .env ] || echo 'DATABASE_URL=\"postgresql://postgres:password@localhost:5432/job-board\"\nJWT_SECRET=fcc4e2eea5dd2d79152d019860f851db2fdc61ee7db6768b6de4cf4b92fe5f60' > .env",
 		"db:migrate": "npx prisma migrate dev",
 		"db:sync": "npm run env:setup && npx prisma generate && npx prisma migrate deploy",
 		"db:reset": "npx prisma migrate reset --force && npm run prisma:seed",
@@ -31,13 +31,16 @@
 	"license": "ISC",
 	"dependencies": {
 		"@prisma/client": "^6.15.0",
+		"argon2": "^0.45.1",
 		"dotenv": "^16.6.1",
 		"express": "^5.2.1",
+		"jsonwebtoken": "^9.0.3",
 		"winston": "^3.19.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.7",
 		"@types/express": "^5.0.6",
+		"@types/jsonwebtoken": "^9.0.10",
 		"@types/morgan": "^1.9.10",
 		"@types/node": "^26.1.2",
 		"@types/supertest": "^7.2.1",
