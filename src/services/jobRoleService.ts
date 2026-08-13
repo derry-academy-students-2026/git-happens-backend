@@ -1,10 +1,15 @@
-import { mapJobRoleToResponseModel } from "../models/jobRoleMapper.js";
-import type { JobRoleResponseModel } from "../models/jobRoleModels.js";
 import logger from "../lib/logger.js";
+import {
+	jobRoleInclude,
+	mapJobRoleToDetailedResponseModel,
+	mapJobRoleToResponseModel,
+	mapPrismaJobRoleToModel,
+} from "../models/jobRoleMapper.js";
+import type {
+	JobRoleDetailedResponseModel,
+	JobRoleResponseModel,
+} from "../models/jobRoleModels.js";
 import prisma from "../prismaClient.js";
-import { JobRoleModel } from "../models/jobRoleModels.js";
-import { CapabilityModel } from "../models/capabilityModels.js";
-import { BandModel } from "../models/bandModels.js";
 
 // Service class for handling job role-related operations.
 export class JobRoleService {
@@ -14,28 +19,35 @@ export class JobRoleService {
 	 * @returns A promise that resolves to an array of JobRoleResponseModel instances.
 	 */
 	async getJobRoles(): Promise<JobRoleResponseModel[]> {
-        const jobRoles = await prisma.jobRole.findMany({
-			include: { capability: true, band: true },
+		const jobRoles = await prisma.jobRole.findMany({
+			include: jobRoleInclude,
 		});
 		logger.debug(`Queried ${jobRoles.length} job role(s) from the database`);
 
-		const models = jobRoles.map(
-			(jobRole) =>
-				new JobRoleModel(
-					jobRole.jobRoleId,
-					jobRole.roleName,
-					jobRole.location,
-					new CapabilityModel(
-						jobRole.capability.capabilityId,
-						jobRole.capability.capabilityName,
-					),
-					new BandModel(jobRole.band.bandId, jobRole.band.bandName),
-					jobRole.closingDate,
-					jobRole.status,
-				),
-		);
+		return jobRoles.map(mapPrismaJobRoleToModel).map(mapJobRoleToResponseModel);
+	}
 
-		return models.map(mapJobRoleToResponseModel);
+	/**
+	 * Fetches a single job role by its ID, including its capability, band and status.
+	 * @param jobRoleId - The ID of the job role to fetch.
+	 * @returns A promise resolving to the matching JobRoleDetailedResponseModel,
+	 * or null if no job role has that ID.
+	 */
+	async getJobRoleById(
+		jobRoleId: number,
+	): Promise<JobRoleDetailedResponseModel | null> {
+		const jobRole = await prisma.jobRole.findUnique({
+			where: { jobRoleId },
+			include: jobRoleInclude,
+		});
+
+		if (!jobRole) {
+			logger.debug(`No job role found with ID ${jobRoleId}`);
+			return null;
+		}
+
+		logger.debug(`Queried job role ${jobRoleId} from the database`);
+		return mapJobRoleToDetailedResponseModel(mapPrismaJobRoleToModel(jobRole));
 	}
 }
 
