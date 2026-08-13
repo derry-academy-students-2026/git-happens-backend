@@ -56,13 +56,12 @@ async function main() {
 			c.capabilityName,
 			c.capabilityId,
 		]),
-    );
+	);
 	// Create auth roles used by login and registration tickets.
 	await prisma.userRole.createMany({
 		data: [{ roleName: "user" }, { roleName: "admin" }],
 		skipDuplicates: true,
 	});
-
 	const bandMap = Object.fromEntries(
 		allBands.map((b: BandModel) => [b.bandName, b.bandId]),
 	);
