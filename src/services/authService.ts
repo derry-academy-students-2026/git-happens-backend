@@ -1,13 +1,17 @@
 import argon2 from "argon2";
-import prisma from "../prismaClient.js";
+import type { SignOptions } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import {
+	LoginUserResponseModel,
 	RegisterUserResponseModel,
 } from "../models/authModels.js";
+import prisma from "../prismaClient.js";
 
 const MIN_PASSWORD_LENGTH = 9;
 const DEFAULT_ROLE_NAME = "user";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).+$/;
+const TOKEN_EXPIRY: SignOptions["expiresIn"] = "1h";
 
 export class AuthValidationError extends Error {
 	readonly statusCode = 400;
@@ -17,9 +21,18 @@ export class AuthConflictError extends Error {
 	readonly statusCode = 409;
 }
 
+export class AuthUnauthorizedError extends Error {
+	readonly statusCode = 401;
+}
+
 export class AuthService {
 	/**
 	 * Registers a new user with a default user role and an argon2-hashed password.
+	 * @param email The user's email address.
+	 * @param password The user's password.
+	 * @returns A RegisterUserResponseModel containing the created user's email, role, and creation timestamp.
+	 * @throws AuthValidationError if the email or password is invalid.
+	 * @throws AuthConflictError if a user with the same email already exists.
 	 */
 	async registerUser(
 		email: string,
@@ -57,14 +70,83 @@ export class AuthService {
 				"code" in error &&
 				error.code === "P2002"
 			) {
-				throw new AuthConflictError("An account with this email already exists");
+				throw new AuthConflictError(
+					"An account with this email already exists",
+				);
 			}
 			throw error;
 		}
 	}
 
 	/**
+	 * Authenticates a user by email and password and issues a signed JWT.
+	 * @param email The user's email address.
+	 * @param password The user's password.
+	 * @returns A LoginUserResponseModel containing the JWT and the user's email.
+	 * @throws AuthUnauthorizedError if the email does not exist or the password is incorrect.
+	 */
+	async loginUser(
+		email: string,
+		password: string,
+	): Promise<LoginUserResponseModel> {
+		const normalizedEmail = email.trim().toLowerCase();
+
+		const user = await prisma.user.findUnique({
+			where: { email: normalizedEmail },
+		});
+
+		// One error for both unknown email and wrong password, so the response
+		// cannot be used to discover which accounts exist.
+		if (!user || !(await this.verifyPassword(user.passwordHash, password))) {
+			throw new AuthUnauthorizedError("Invalid email or password");
+		}
+
+		const token = jwt.sign(
+			{ sub: user.id, email: user.email },
+			this.getJwtSecret(),
+			{ expiresIn: TOKEN_EXPIRY },
+		);
+
+		return new LoginUserResponseModel(token, user.email);
+	}
+
+	/**
+	 * argon2 stores its salt and cost parameters inside the hash, so the
+	 * submitted password is verified against it rather than re-hashed.
+	 * @param passwordHash The stored argon2 hash of the user's password.
+	 * @param password The submitted password to verify.
+	 * @returns True if the password matches the hash; false otherwise.
+	 * @throws Any errors thrown by argon2.verify, except for malformed hashes which return false.
+	 */
+	private async verifyPassword(
+		passwordHash: string,
+		password: string,
+	): Promise<boolean> {
+		try {
+			return await argon2.verify(passwordHash, password);
+		} catch {
+			// Thrown when the stored hash is malformed; treat as a failed login.
+			return false;
+		}
+	}
+
+	/**
+	 * Retrieves the JWT secret from the environment variables.
+	 * @returns The JWT secret.
+	 * @throws Error if the JWT_SECRET environment variable is not set.
+	 */
+	private getJwtSecret(): string {
+		const secret = process.env.JWT_SECRET;
+		if (!secret) {
+			throw new Error("JWT_SECRET environment variable is not set");
+		}
+		return secret;
+	}
+
+	/**
 	 * Validates email format for registration.
+	 * @param email The email address to validate.
+	 * @throws AuthValidationError if the email format is invalid.
 	 */
 	private validateEmail(email: string): void {
 		if (!EMAIL_REGEX.test(email)) {
@@ -74,6 +156,8 @@ export class AuthService {
 
 	/**
 	 * Validates password complexity and minimum length.
+	 * @param password The password to validate.
+	 * @throws AuthValidationError if the password does not meet complexity or length requirements.
 	 */
 	private validatePassword(password: string): void {
 		if (password.length < MIN_PASSWORD_LENGTH) {
