@@ -18,6 +18,15 @@ npm run db:migrate
 npm run db:setup
 ```
 
+## .env example
+
+```
+npm run db:setup should setup .env file, however if this fails see the below example .env:
+
+DATABASE_URL="postgresql://postgres:password@localhost:5431/job-board"
+JWT_SECRET="22f4e9ee2433533504c547d014f170208e6897b39759f371f8eb0194a1b41f5e"
+```
+
 ## Run
 
 ```bash
