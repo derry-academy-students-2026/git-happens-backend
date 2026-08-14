@@ -10,3 +10,15 @@ describe("GET /health", () => {
 		expect(response.body).toHaveProperty("timestamp");
 	});
 });
+
+describe("Protected API endpoints", () => {
+	it("should require a token for GET /job-roles", async () => {
+		const response = await request(app).get("/job-roles");
+
+		expect(response.status).toBe(401);
+		expect(response.body).toEqual({
+			message: "Authentication required",
+			redirectTo: "/login",
+		});
+	});
+});

@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../lib/logger.js";
+import { maskEmail } from "../lib/maskEmail.js";
 import { UserRequestModel } from "../models/authModels.js";
 import {
 	AuthConflictError,
@@ -13,6 +14,10 @@ export class AuthController {
 
 	/**
 	 * Handles user registration requests.
+	 * @param req Express request carrying user registration details.
+	 * @param res Express response used to send API output.
+	 * @param next Express next middleware callback for unexpected failures.
+	 * @returns Promise that resolves when the response is sent.
 	 */
 	async register(
 		req: Request,
@@ -20,6 +25,7 @@ export class AuthController {
 		next: NextFunction,
 	): Promise<void> {
 		try {
+			logger.info("Registration request received");
 			const requestModel = new UserRequestModel(
 				String(req.body?.email ?? ""),
 				String(req.body?.password ?? ""),
@@ -28,6 +34,9 @@ export class AuthController {
 				requestModel.email,
 				requestModel.password,
 			);
+			logger.info("Registration succeeded", {
+				email: maskEmail(createdUser.email),
+			});
 			res.status(201).json(createdUser);
 		} catch (error: unknown) {
 			if (error instanceof AuthValidationError) {
@@ -42,15 +51,21 @@ export class AuthController {
 				return;
 			}
 
+			logger.error("Registration failed with unexpected error", { error });
 			next(error);
 		}
 	}
 
 	/**
 	 * Handles user login requests and returns a JWT on success.
+	 * @param req Express request carrying login details.
+	 * @param res Express response used to send API output.
+	 * @param next Express next middleware callback for unexpected failures.
+	 * @returns Promise that resolves when the response is sent.
 	 */
 	async login(req: Request, res: Response, next: NextFunction): Promise<void> {
 		try {
+			logger.info("Login request received");
 			const requestModel = new UserRequestModel(
 				String(req.body?.email ?? ""),
 				String(req.body?.password ?? ""),
@@ -59,6 +74,10 @@ export class AuthController {
 				requestModel.email,
 				requestModel.password,
 			);
+			logger.info("Login succeeded", {
+				email: maskEmail(loggedInUser.email),
+				role: loggedInUser.role,
+			});
 			res.status(200).json(loggedInUser);
 		} catch (error: unknown) {
 			if (error instanceof AuthUnauthorizedError) {
@@ -67,17 +86,11 @@ export class AuthController {
 				return;
 			}
 
+			logger.error("Login failed with unexpected error", { error });
 			next(error);
 		}
 	}
 
-	/**
-	 * Handles logout. The JWT is stateless, so the client discards its copy;
-	 * this endpoint exists to give the frontend a single place to call.
-	 */
-	logout(_req: Request, res: Response): void {
-		res.status(200).json({ message: "Logged out successfully" });
-	}
 }
 
 export const authController = new AuthController(authService);

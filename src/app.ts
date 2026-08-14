@@ -2,6 +2,10 @@
 import express from "express";
 import morgan from "./config/morganMiddleware.js";
 import logger from "./lib/logger.js";
+import {
+	authenticateToken,
+	authorizeRecruitmentAccess,
+} from "./middleware/auth.js";
 import authRouter from "./routes/authRouter.js";
 import jobRoleRouter from "./routes/jobRoleRouter.js";
 
@@ -12,8 +16,13 @@ app.use(express.json());
 //morgan logging for HTTP requests
 app.use(morgan);
 
-app.use("/job-roles", jobRoleRouter);
 app.use("/auth", authRouter);
+app.use(
+	"/job-roles",
+	authenticateToken,
+	authorizeRecruitmentAccess,
+	jobRoleRouter,
+);
 
 logger.info("Express app initialized");
 

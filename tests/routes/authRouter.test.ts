@@ -87,6 +87,7 @@ describe("authRouter", () => {
 		loginUser.mockResolvedValue({
 			token: "signed.jwt.token",
 			email: "user@example.com",
+			role: "user",
 		});
 
 		const response = await request(createApp()).post("/auth/login").send({
@@ -98,6 +99,7 @@ describe("authRouter", () => {
 		expect(response.body).toEqual({
 			token: "signed.jwt.token",
 			email: "user@example.com",
+			role: "user",
 		});
 	});
 
@@ -113,13 +115,5 @@ describe("authRouter", () => {
 
 		expect(response.status).toBe(401);
 		expect(response.body).toEqual({ message: "Invalid email or password" });
-	});
-
-	it("POST /auth/logout returns 200 without calling the service", async () => {
-		const response = await request(createApp()).post("/auth/logout").send();
-
-		expect(response.status).toBe(200);
-		expect(response.body).toEqual({ message: "Logged out successfully" });
-		expect(loginUser).not.toHaveBeenCalled();
 	});
 });

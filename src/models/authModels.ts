@@ -17,5 +17,6 @@ export class LoginUserResponseModel {
 	constructor(
 		public readonly token: string,
 		public readonly email: string,
+		public readonly role: string,
 	) {}
 }

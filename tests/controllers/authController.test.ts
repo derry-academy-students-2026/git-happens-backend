@@ -137,6 +137,7 @@ describe("AuthController.login", () => {
 			vi.fn().mockResolvedValue({
 				token: "signed.jwt.token",
 				email: "test@example.com",
+				role: "user",
 			}),
 		);
 		const controller = new AuthController(service);
@@ -155,6 +156,7 @@ describe("AuthController.login", () => {
 		expect(res.json).toHaveBeenCalledWith({
 			token: "signed.jwt.token",
 			email: "test@example.com",
+			role: "user",
 		});
 		expect(next).not.toHaveBeenCalled();
 	});
@@ -221,17 +223,3 @@ describe("AuthController.login", () => {
 	});
 });
 
-describe("AuthController.logout", () => {
-	it("returns 200 with a confirmation message", () => {
-		// Empty service: logout must not depend on anything from AuthService.
-		const controller = new AuthController({} as AuthService);
-		const res = createMockResponse();
-
-		controller.logout({} as Request, res);
-
-		expect(res.status).toHaveBeenCalledWith(200);
-		expect(res.json).toHaveBeenCalledWith({
-			message: "Logged out successfully",
-		});
-	});
-});
