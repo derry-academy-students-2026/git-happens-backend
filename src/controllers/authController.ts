@@ -1,11 +1,12 @@
 import type { NextFunction, Request, Response } from "express";
+import logger from "../lib/logger.js";
+import { UserRequestModel } from "../models/authModels.js";
 import {
 	AuthConflictError,
+	AuthUnauthorizedError,
 	AuthValidationError,
 	authService,
 } from "../services/authService.js";
-import { UserRequestModel } from "../models/authModels.js";
-import logger from "../lib/logger.js";
 
 export class AuthController {
 	constructor(private service = authService) {}
@@ -43,6 +44,39 @@ export class AuthController {
 
 			next(error);
 		}
+	}
+
+	/**
+	 * Handles user login requests and returns a JWT on success.
+	 */
+	async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+		try {
+			const requestModel = new UserRequestModel(
+				String(req.body?.email ?? ""),
+				String(req.body?.password ?? ""),
+			);
+			const loggedInUser = await this.service.loginUser(
+				requestModel.email,
+				requestModel.password,
+			);
+			res.status(200).json(loggedInUser);
+		} catch (error: unknown) {
+			if (error instanceof AuthUnauthorizedError) {
+				logger.warn("Login failed: invalid credentials");
+				res.status(error.statusCode).json({ message: error.message });
+				return;
+			}
+
+			next(error);
+		}
+	}
+
+	/**
+	 * Handles logout. The JWT is stateless, so the client discards its copy;
+	 * this endpoint exists to give the frontend a single place to call.
+	 */
+	logout(_req: Request, res: Response): void {
+		res.status(200).json({ message: "Logged out successfully" });
 	}
 }
 

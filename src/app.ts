@@ -2,8 +2,8 @@
 import express from "express";
 import morgan from "./config/morganMiddleware.js";
 import logger from "./lib/logger.js";
-import jobRoleRouter from "./routes/jobRoleRouter.js";
 import authRouter from "./routes/authRouter.js";
+import jobRoleRouter from "./routes/jobRoleRouter.js";
 
 const app = express();
 

@@ -3,7 +3,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../src/services/authService.js", () => ({
-	authService: { registerUser: vi.fn() },
+	authService: { registerUser: vi.fn(), loginUser: vi.fn() },
 	AuthService: class {},
 	AuthValidationError: class AuthValidationError extends Error {
 		readonly statusCode = 400;
@@ -11,14 +11,21 @@ vi.mock("../../src/services/authService.js", () => ({
 	AuthConflictError: class AuthConflictError extends Error {
 		readonly statusCode = 409;
 	},
+	AuthUnauthorizedError: class AuthUnauthorizedError extends Error {
+		readonly statusCode = 401;
+	},
 }));
 
 import authRouter from "../../src/routes/authRouter.js";
-import { authService } from "../../src/services/authService.js";
+import {
+	AuthUnauthorizedError,
+	authService,
+} from "../../src/services/authService.js";
 
 const registerUser = authService.registerUser as unknown as ReturnType<
 	typeof vi.fn
 >;
+const loginUser = authService.loginUser as unknown as ReturnType<typeof vi.fn>;
 
 function createApp() {
 	const app = express();
@@ -40,6 +47,7 @@ function createApp() {
 describe("authRouter", () => {
 	beforeEach(() => {
 		registerUser.mockReset();
+		loginUser.mockReset();
 	});
 
 	it("POST /auth/register returns 201 and created user", async () => {
@@ -73,5 +81,45 @@ describe("authRouter", () => {
 
 		expect(response.status).toBe(500);
 		expect(response.body).toEqual({ message: "boom" });
+	});
+
+	it("POST /auth/login returns 200 and a token", async () => {
+		loginUser.mockResolvedValue({
+			token: "signed.jwt.token",
+			email: "user@example.com",
+		});
+
+		const response = await request(createApp()).post("/auth/login").send({
+			email: "user@example.com",
+			password: "GoodPass!9",
+		});
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual({
+			token: "signed.jwt.token",
+			email: "user@example.com",
+		});
+	});
+
+	it("POST /auth/login returns 401 for invalid credentials", async () => {
+		loginUser.mockRejectedValue(
+			new AuthUnauthorizedError("Invalid email or password"),
+		);
+
+		const response = await request(createApp()).post("/auth/login").send({
+			email: "user@example.com",
+			password: "wrong",
+		});
+
+		expect(response.status).toBe(401);
+		expect(response.body).toEqual({ message: "Invalid email or password" });
+	});
+
+	it("POST /auth/logout returns 200 without calling the service", async () => {
+		const response = await request(createApp()).post("/auth/logout").send();
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual({ message: "Logged out successfully" });
+		expect(loginUser).not.toHaveBeenCalled();
 	});
 });

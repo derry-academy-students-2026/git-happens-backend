@@ -12,3 +12,10 @@ export class RegisterUserResponseModel {
 		public readonly createdAt: Date,
 	) {}
 }
+
+export class LoginUserResponseModel {
+	constructor(
+		public readonly token: string,
+		public readonly email: string,
+	) {}
+}

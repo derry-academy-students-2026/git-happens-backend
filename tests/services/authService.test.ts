@@ -1,21 +1,28 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../src/prismaClient.js", () => ({
 	default: {
 		user: {
 			create: vi.fn(),
+			findUnique: vi.fn(),
 		},
 	},
 }));
 
+import argon2 from "argon2";
+import jwt from "jsonwebtoken";
 import prisma from "../../src/prismaClient.js";
 import {
 	AuthConflictError,
 	AuthService,
+	AuthUnauthorizedError,
 	AuthValidationError,
 } from "../../src/services/authService.js";
 
 const createUser = prisma.user.create as unknown as ReturnType<typeof vi.fn>;
+const findUniqueUser = prisma.user.findUnique as unknown as ReturnType<
+	typeof vi.fn
+>;
 
 describe("AuthService.registerUser", () => {
 	beforeEach(() => {
@@ -31,7 +38,10 @@ describe("AuthService.registerUser", () => {
 		});
 
 		const service = new AuthService();
-		const result = await service.registerUser("  TEST@Example.com  ", "GoodPass!9");
+		const result = await service.registerUser(
+			"  TEST@Example.com  ",
+			"GoodPass!9",
+		);
 
 		expect(createUser).toHaveBeenCalledTimes(1);
 		const createArg = createUser.mock.calls[0][0];
@@ -67,7 +77,9 @@ describe("AuthService.registerUser", () => {
 	it("throws validation error when password does not include required character types", async () => {
 		const service = new AuthService();
 
-		await expect(service.registerUser("a@b.com", "alllowercase9!")).rejects.toThrow(
+		await expect(
+			service.registerUser("a@b.com", "alllowercase9!"),
+		).rejects.toThrow(
 			"Password must include upper, lower, and special characters",
 		);
 		expect(createUser).not.toHaveBeenCalled();
@@ -80,5 +92,123 @@ describe("AuthService.registerUser", () => {
 		await expect(
 			service.registerUser("test@example.com", "GoodPass!9"),
 		).rejects.toBeInstanceOf(AuthConflictError);
+	});
+});
+
+describe("AuthService.loginUser", () => {
+	const originalSecret = process.env.JWT_SECRET;
+
+	beforeEach(() => {
+		findUniqueUser.mockReset();
+		process.env.JWT_SECRET = "test-secret";
+	});
+
+	afterEach(() => {
+		if (originalSecret === undefined) {
+			delete process.env.JWT_SECRET;
+		} else {
+			process.env.JWT_SECRET = originalSecret;
+		}
+	});
+
+	async function seedMatchingUser(password: string) {
+		findUniqueUser.mockResolvedValue({
+			id: 7,
+			email: "test@example.com",
+			passwordHash: await argon2.hash(password),
+		});
+	}
+
+	it("returns a signed token when the password matches", async () => {
+		await seedMatchingUser("GoodPass!9");
+		const service = new AuthService();
+
+		const result = await service.loginUser("  TEST@Example.com ", "GoodPass!9");
+
+		expect(findUniqueUser).toHaveBeenCalledWith({
+			where: { email: "test@example.com" },
+		});
+		expect(result.email).toBe("test@example.com");
+
+		const payload = jwt.verify(result.token, "test-secret") as unknown as {
+			sub: number;
+			email: string;
+		};
+		expect(payload.sub).toBe(7);
+		expect(payload.email).toBe("test@example.com");
+	});
+
+	it("does not return the password hash to callers", async () => {
+		await seedMatchingUser("GoodPass!9");
+		const service = new AuthService();
+
+		const result = await service.loginUser("test@example.com", "GoodPass!9");
+
+		expect(Object.keys(result)).toEqual(["token", "email"]);
+	});
+
+	it("throws unauthorized when the email is unknown", async () => {
+		findUniqueUser.mockResolvedValue(null);
+		const service = new AuthService();
+
+		await expect(
+			service.loginUser("missing@example.com", "GoodPass!9"),
+		).rejects.toBeInstanceOf(AuthUnauthorizedError);
+	});
+
+	it("throws unauthorized when the password does not match", async () => {
+		await seedMatchingUser("GoodPass!9");
+		const service = new AuthService();
+
+		await expect(
+			service.loginUser("test@example.com", "WrongPass!9"),
+		).rejects.toBeInstanceOf(AuthUnauthorizedError);
+	});
+
+	it("uses the same message for unknown email and wrong password", async () => {
+		findUniqueUser.mockResolvedValue(null);
+		const service = new AuthService();
+		const unknownEmail = await service
+			.loginUser("missing@example.com", "GoodPass!9")
+			.catch((error: Error) => error.message);
+
+		await seedMatchingUser("GoodPass!9");
+		const wrongPassword = await service
+			.loginUser("test@example.com", "WrongPass!9")
+			.catch((error: Error) => error.message);
+
+		expect(unknownEmail).toBe(wrongPassword);
+	});
+
+	it("does not apply registration password rules to login", async () => {
+		await seedMatchingUser("weak");
+		const service = new AuthService();
+
+		await expect(
+			service.loginUser("test@example.com", "weak"),
+		).resolves.toBeDefined();
+	});
+
+	it("throws unauthorized when the stored hash is malformed", async () => {
+		findUniqueUser.mockResolvedValue({
+			id: 7,
+			email: "test@example.com",
+			passwordHash: "not-a-valid-argon2-hash",
+		});
+		const service = new AuthService();
+
+		await expect(
+			service.loginUser("test@example.com", "GoodPass!9"),
+		).rejects.toBeInstanceOf(AuthUnauthorizedError);
+	});
+
+	it("fails loudly when JWT_SECRET is not configured", async () => {
+		await seedMatchingUser("GoodPass!9");
+		delete process.env.JWT_SECRET;
+		const service = new AuthService();
+
+		await expect(
+			service.loginUser("test@example.com", "GoodPass!9"),
+		).rejects.toThrow("JWT_SECRET environment variable is not set");
 	});
 });
