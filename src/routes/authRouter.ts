@@ -17,9 +17,4 @@ authRouter.post("/login", (req, res, next) =>
 	authController.login(req, res, next),
 );
 
-/**
- * Handles user logout.
- */
-authRouter.post("/logout", (req, res) => authController.logout(req, res));
-
 export default authRouter;

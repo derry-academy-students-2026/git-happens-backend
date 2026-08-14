@@ -115,6 +115,7 @@ describe("AuthService.loginUser", () => {
 		findUniqueUser.mockResolvedValue({
 			id: 7,
 			email: "test@example.com",
+			role: { roleName: "user" },
 			passwordHash: await argon2.hash(password),
 		});
 	}
@@ -127,15 +128,21 @@ describe("AuthService.loginUser", () => {
 
 		expect(findUniqueUser).toHaveBeenCalledWith({
 			where: { email: "test@example.com" },
+			include: { role: true },
 		});
 		expect(result.email).toBe("test@example.com");
+		expect(result.role).toBe("user");
 
 		const payload = jwt.verify(result.token, "test-secret") as unknown as {
 			sub: number;
 			email: string;
+			role: string;
+			jti: string;
 		};
 		expect(payload.sub).toBe(7);
 		expect(payload.email).toBe("test@example.com");
+		expect(payload.role).toBe("user");
+		expect(payload.jti).toBeTypeOf("string");
 	});
 
 	it("does not return the password hash to callers", async () => {
@@ -144,7 +151,7 @@ describe("AuthService.loginUser", () => {
 
 		const result = await service.loginUser("test@example.com", "GoodPass!9");
 
-		expect(Object.keys(result)).toEqual(["token", "email"]);
+		expect(Object.keys(result)).toEqual(["token", "email", "role"]);
 	});
 
 	it("throws unauthorized when the email is unknown", async () => {
@@ -193,6 +200,7 @@ describe("AuthService.loginUser", () => {
 		findUniqueUser.mockResolvedValue({
 			id: 7,
 			email: "test@example.com",
+			role: { roleName: "user" },
 			passwordHash: "not-a-valid-argon2-hash",
 		});
 		const service = new AuthService();
