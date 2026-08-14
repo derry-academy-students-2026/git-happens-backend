@@ -10,7 +10,7 @@ const USER_ROLES = new Set(["user"]);
 const READ_ONLY_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 interface AuthTokenPayload extends JwtPayload {
-	sub: number | string;
+	sub: string;
 	email: string;
 	role: string;
 	jti: string;
@@ -82,7 +82,7 @@ function hasRequiredClaims(payload: JwtPayload | string): payload is AuthTokenPa
 	}
 
 	return (
-		typeof payload.sub !== "undefined" &&
+		typeof payload.sub === "string" &&
 		typeof payload.email === "string" &&
 		typeof payload.role === "string" &&
 		typeof payload.jti === "string"

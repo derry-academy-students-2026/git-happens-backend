@@ -25,7 +25,7 @@ function createProtectedApp() {
 
 function createToken(role: string): string {
 	return jwt.sign(
-		{ sub: 1, email: "user@example.com", role, jti: `${role}-jti` },
+		{ sub: "1", email: "user@example.com", role, jti: `${role}-jti` },
 		"test-secret",
 		{ expiresIn: "1h" },
 	);

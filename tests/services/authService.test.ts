@@ -134,12 +134,12 @@ describe("AuthService.loginUser", () => {
 		expect(result.role).toBe("user");
 
 		const payload = jwt.verify(result.token, "test-secret") as unknown as {
-			sub: number;
+			sub: string;
 			email: string;
 			role: string;
 			jti: string;
 		};
-		expect(payload.sub).toBe(7);
+		expect(payload.sub).toBe("7");
 		expect(payload.email).toBe("test@example.com");
 		expect(payload.role).toBe("user");
 		expect(payload.jti).toBeTypeOf("string");

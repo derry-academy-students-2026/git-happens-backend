@@ -119,7 +119,7 @@ export class AuthService {
 
 		const token = jwt.sign(
 			{
-				sub: user.id,
+				sub: String(user.id),
 				email: user.email,
 				role: user.role.roleName,
 				jti: randomUUID(),
