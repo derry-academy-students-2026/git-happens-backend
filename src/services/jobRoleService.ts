@@ -5,26 +5,43 @@ import {
 	mapJobRoleToResponseModel,
 	mapPrismaJobRoleToModel,
 } from "../models/jobRoleMapper.js";
-import type {
-	JobRoleDetailedResponseModel,
-	JobRoleResponseModel,
+import {
+	PaginatedJobRolesResponseModel,
+	type JobRoleDetailedResponseModel,
 } from "../models/jobRoleModels.js";
 import prisma from "../prismaClient.js";
+
+// number of job roles returned per page
+export const JOB_ROLES_PAGE_SIZE = 10;
 
 // Service class for handling job role-related operations.
 export class JobRoleService {
 	/**
-	 * Fetches all job roles from the database, including their associated capabilities and bands.
+	 * Fetches a page of job roles from the database, including their associated capabilities and bands.
 	 * Maps the retrieved job roles to JobRoleResponseModel instances before returning them.
-	 * @returns A promise that resolves to an array of JobRoleResponseModel instances.
+	 * @param page - The 1-based page number to fetch.
+	 * @returns A promise that resolves to a page of JobRoleResponseModel instances along with pagination metadata.
 	 */
-	async getJobRoles(): Promise<JobRoleResponseModel[]> {
-		const jobRoles = await prisma.jobRole.findMany({
-			include: jobRoleInclude,
-		});
-		logger.debug(`Queried ${jobRoles.length} job role(s) from the database`);
+	async getJobRoles(page: number): Promise<PaginatedJobRolesResponseModel> {
+		const [jobRoles, totalCount] = await Promise.all([
+			prisma.jobRole.findMany({
+				include: jobRoleInclude,
+				skip: (page - 1) * JOB_ROLES_PAGE_SIZE,
+				take: JOB_ROLES_PAGE_SIZE,
+			}),
+			prisma.jobRole.count(),
+		]);
+		logger.debug(
+			`Queried ${jobRoles.length} job role(s) from the database (page ${page})`,
+		);
 
-		return jobRoles.map(mapPrismaJobRoleToModel).map(mapJobRoleToResponseModel);
+		return new PaginatedJobRolesResponseModel(
+			jobRoles.map(mapPrismaJobRoleToModel).map(mapJobRoleToResponseModel),
+			page,
+			JOB_ROLES_PAGE_SIZE,
+			totalCount,
+			Math.ceil(totalCount / JOB_ROLES_PAGE_SIZE),
+		);
 	}
 
 	/**
