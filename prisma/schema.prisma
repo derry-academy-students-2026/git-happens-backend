@@ -28,6 +28,7 @@ model JobRole {
   statusId           Int
   status             Status @relation(fields: [statusId], references: [statusId])
   numberOfOpenPositions    Int
+  applications       JobApplication[]
 }
 
 model Status {
@@ -62,4 +63,25 @@ model User {
   role         UserRole @relation(fields: [roleId], references: [roleId])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  applications JobApplication[]
+}
+
+model JobApplication {
+  applicationId     Int      @id @default(autoincrement())
+  jobRoleId         Int
+  userId            Int
+  fullName          String
+  countryCode       String   @default("")
+  phoneNumber       String
+  email             String   @default("")
+  applicationText   String
+  previousExperience String?
+  applicationStatus String   @default("in progress")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  jobRole JobRole @relation(fields: [jobRoleId], references: [jobRoleId])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([jobRoleId, userId])
 }

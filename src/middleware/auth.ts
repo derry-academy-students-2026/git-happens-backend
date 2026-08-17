@@ -8,6 +8,7 @@ const AUTH_SCHEME = "Bearer ";
 const ADMIN_ROLES = new Set(["admin"]);
 const USER_ROLES = new Set(["user"]);
 const READ_ONLY_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const USER_APPLICATION_PATH = /^\/\d+\/applications\/?$/;
 
 interface AuthTokenPayload extends JwtPayload {
 	sub: string;
@@ -86,6 +87,15 @@ function hasRequiredClaims(payload: JwtPayload | string): payload is AuthTokenPa
 		typeof payload.email === "string" &&
 		typeof payload.role === "string" &&
 		typeof payload.jti === "string"
+	);
+}
+
+/**
+ * Checks whether the request is the applicant job-application submission path.
+ */
+function isUserApplicationSubmission(req: Request): boolean {
+	return (
+		req.method.toUpperCase() === "POST" && USER_APPLICATION_PATH.test(req.path)
 	);
 }
 
@@ -176,7 +186,10 @@ export function authorizeRecruitmentAccess(
 	}
 
 	if (USER_ROLES.has(role)) {
-		if (READ_ONLY_METHODS.has(req.method.toUpperCase())) {
+		if (
+			READ_ONLY_METHODS.has(req.method.toUpperCase()) ||
+			isUserApplicationSubmission(req)
+		) {
 			logger.debug("Authorization granted: user read-only access", {
 				method: req.method,
 				path: req.originalUrl,
@@ -192,7 +205,8 @@ export function authorizeRecruitmentAccess(
 			role,
 		});
 		res.status(403).json({
-			message: "Users can only access list and information endpoints",
+			message:
+				"Users can only access list/info endpoints and submit job applications",
 		});
 		return;
 	}

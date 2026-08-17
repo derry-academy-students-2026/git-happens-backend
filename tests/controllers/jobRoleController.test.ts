@@ -18,6 +18,10 @@ import {
 	JobRoleResponseModel,
 } from "../../src/models/jobRoleModels.js";
 import { StatusModel } from "../../src/models/statusModel.js";
+import {
+	JobRoleApplicationConflictError,
+	JobRoleNotFoundError,
+} from "../../src/services/jobRoleService.js";
 import type { JobRoleService } from "../../src/services/jobRoleService.js";
 
 const capability = new CapabilityModel(1, "Software Engineering");
@@ -56,6 +60,12 @@ function createFakeServiceById(
 	getJobRoleById: ReturnType<typeof vi.fn>,
 ): JobRoleService {
 	return { getJobRoleById } as unknown as JobRoleService;
+}
+
+function createFakeApplicationService(
+	applyForRole: ReturnType<typeof vi.fn>,
+): JobRoleService {
+	return { applyForRole } as unknown as JobRoleService;
 }
 
 function createMockResponse(): Response {
@@ -168,5 +178,281 @@ describe("JobRolesController.getJobRoleById", () => {
 
 		expect(next).toHaveBeenCalledWith(error);
 		expect(res.json).not.toHaveBeenCalled();
+	});
+});
+
+describe("JobRolesController.applyForRole", () => {
+	it("responds with 201 and created application", async () => {
+		const applyForRole = vi.fn().mockResolvedValue({
+			applicationId: 1,
+			jobRoleId: 2,
+			userId: 7,
+			applicationStatus: "in progress",
+		});
+		const controller = new JobRolesController(
+			createFakeApplicationService(applyForRole),
+		);
+		const res = createMockResponse();
+		(res as unknown as { locals: Record<string, unknown> }).locals = {
+			auth: { sub: "7" },
+		};
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.applyForRole(
+			{
+				params: { id: "2" },
+				body: {
+					fullName: "Jane Applicant",
+					countryCode: "+44",
+					phoneNumber: "7123 456 789",
+					email: "jane.applicant@example.com",
+					applicationText: "I am interested in this role.",
+					previousExperience: "5 years experience",
+				},
+			} as unknown as Request,
+			res,
+			next,
+		);
+
+		expect(applyForRole).toHaveBeenCalledWith(
+			2,
+			7,
+			"Jane Applicant",
+			"+44",
+			"7123 456 789",
+			"jane.applicant@example.com",
+			"I am interested in this role.",
+			"5 years experience",
+		);
+		expect(res.status).toHaveBeenCalledWith(201);
+		expect(next).not.toHaveBeenCalled();
+	});
+
+	it("responds with 400 when request body is invalid", async () => {
+		const applyForRole = vi.fn();
+		const controller = new JobRolesController(
+			createFakeApplicationService(applyForRole),
+		);
+		const res = createMockResponse();
+		(res as unknown as { locals: Record<string, unknown> }).locals = {
+			auth: { sub: "7" },
+		};
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.applyForRole(
+			{
+				params: { id: "2" },
+				body: {
+					fullName: "",
+					countryCode: "+44",
+					phoneNumber: "",
+					email: "invalid",
+					applicationText: "",
+				},
+			} as unknown as Request,
+			res,
+			next,
+		);
+
+		expect(res.status).toHaveBeenCalledWith(400);
+		expect(applyForRole).not.toHaveBeenCalled();
+		expect(next).not.toHaveBeenCalled();
+	});
+
+	it("responds with 401 when auth subject is unavailable", async () => {
+		const controller = new JobRolesController(
+			createFakeApplicationService(vi.fn()),
+		);
+		const res = createMockResponse();
+		(res as unknown as { locals: Record<string, unknown> }).locals = {};
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.applyForRole(
+			{
+				params: { id: "2" },
+				body: {
+					fullName: "Jane Applicant",
+					countryCode: "+44",
+					phoneNumber: "7123 456 789",
+					email: "jane.applicant@example.com",
+					applicationText: "I am interested in this role.",
+				},
+			} as unknown as Request,
+			res,
+			next,
+		);
+
+		expect(res.status).toHaveBeenCalledWith(401);
+		expect(next).not.toHaveBeenCalled();
+	});
+
+	it("responds with 404 when target role is not found", async () => {
+		const applyForRole = vi
+			.fn()
+			.mockRejectedValue(new JobRoleNotFoundError("Job role not found"));
+		const controller = new JobRolesController(
+			createFakeApplicationService(applyForRole),
+		);
+		const res = createMockResponse();
+		(res as unknown as { locals: Record<string, unknown> }).locals = {
+			auth: { sub: "7" },
+		};
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.applyForRole(
+			{
+				params: { id: "2" },
+				body: {
+					fullName: "Jane Applicant",
+					countryCode: "+44",
+					phoneNumber: "7123 456 789",
+					email: "jane.applicant@example.com",
+					applicationText: "I am interested in this role.",
+				},
+			} as unknown as Request,
+			res,
+			next,
+		);
+
+		expect(res.status).toHaveBeenCalledWith(404);
+		expect(res.json).toHaveBeenCalledWith({ message: "Job role not found" });
+		expect(next).not.toHaveBeenCalled();
+	});
+
+	it("responds with 409 when role cannot be applied for", async () => {
+		const applyForRole = vi.fn().mockRejectedValue(
+			new JobRoleApplicationConflictError(
+				"This role is not accepting applications",
+			),
+		);
+		const controller = new JobRolesController(
+			createFakeApplicationService(applyForRole),
+		);
+		const res = createMockResponse();
+		(res as unknown as { locals: Record<string, unknown> }).locals = {
+			auth: { sub: "7" },
+		};
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.applyForRole(
+			{
+				params: { id: "2" },
+				body: {
+					fullName: "Jane Applicant",
+					countryCode: "+44",
+					phoneNumber: "7123 456 789",
+					email: "jane.applicant@example.com",
+					applicationText: "I am interested in this role.",
+				},
+			} as unknown as Request,
+			res,
+			next,
+		);
+
+		expect(res.status).toHaveBeenCalledWith(409);
+		expect(res.json).toHaveBeenCalledWith({
+			message: "This role is not accepting applications",
+		});
+		expect(next).not.toHaveBeenCalled();
+	});
+
+	it("responds with 400 for invalid country code format", async () => {
+		const applyForRole = vi.fn();
+		const controller = new JobRolesController(
+			createFakeApplicationService(applyForRole),
+		);
+		const res = createMockResponse();
+		(res as unknown as { locals: Record<string, unknown> }).locals = {
+			auth: { sub: "7" },
+		};
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.applyForRole(
+			{
+				params: { id: "2" },
+				body: {
+					fullName: "Jane Applicant",
+					countryCode: "44",
+					phoneNumber: "7123 456 789",
+					email: "jane.applicant@example.com",
+					applicationText: "I am interested in this role.",
+				},
+			} as unknown as Request,
+			res,
+			next,
+		);
+
+		expect(res.status).toHaveBeenCalledWith(400);
+		expect(res.json).toHaveBeenCalledWith({
+			message: "Country code must be in format +XXX (e.g., +44)",
+		});
+		expect(applyForRole).not.toHaveBeenCalled();
+	});
+
+	it("responds with 400 for invalid phone number format", async () => {
+		const applyForRole = vi.fn();
+		const controller = new JobRolesController(
+			createFakeApplicationService(applyForRole),
+		);
+		const res = createMockResponse();
+		(res as unknown as { locals: Record<string, unknown> }).locals = {
+			auth: { sub: "7" },
+		};
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.applyForRole(
+			{
+				params: { id: "2" },
+				body: {
+					fullName: "Jane Applicant",
+					countryCode: "+44",
+					phoneNumber: "07123-ABCD",
+					email: "jane.applicant@example.com",
+					applicationText: "I am interested in this role.",
+				},
+			} as unknown as Request,
+			res,
+			next,
+		);
+
+		expect(res.status).toHaveBeenCalledWith(400);
+		expect(res.json).toHaveBeenCalledWith({
+			message:
+				"Phone number can only contain numbers, spaces, hyphens, and parentheses",
+		});
+		expect(applyForRole).not.toHaveBeenCalled();
+	});
+
+	it("responds with 400 for invalid email format", async () => {
+		const applyForRole = vi.fn();
+		const controller = new JobRolesController(
+			createFakeApplicationService(applyForRole),
+		);
+		const res = createMockResponse();
+		(res as unknown as { locals: Record<string, unknown> }).locals = {
+			auth: { sub: "7" },
+		};
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.applyForRole(
+			{
+				params: { id: "2" },
+				body: {
+					fullName: "Jane Applicant",
+					countryCode: "+44",
+					phoneNumber: "7123 456 789",
+					email: "not-an-email",
+					applicationText: "I am interested in this role.",
+				},
+			} as unknown as Request,
+			res,
+			next,
+		);
+
+		expect(res.status).toHaveBeenCalledWith(400);
+		expect(res.json).toHaveBeenCalledWith({
+			message: "Email must be a valid email address",
+		});
+		expect(applyForRole).not.toHaveBeenCalled();
 	});
 });
