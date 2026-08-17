@@ -58,6 +58,12 @@ function createFakeServiceById(
 	return { getJobRoleById } as unknown as JobRoleService;
 }
 
+function createFakeCreateService(
+	createJobRole: ReturnType<typeof vi.fn>,
+): JobRoleService {
+	return { createJobRole } as unknown as JobRoleService;
+}
+
 function createMockResponse(): Response {
 	return {
 		json: vi.fn(),
@@ -168,5 +174,65 @@ describe("JobRolesController.getJobRoleById", () => {
 
 		expect(next).toHaveBeenCalledWith(error);
 		expect(res.json).not.toHaveBeenCalled();
+	});
+});
+
+describe("JobRolesController.createJobRole", () => {
+	const validBody = {
+		roleName: "Senior Software Engineer",
+		location: "Remote",
+		capabilityId: 1,
+		bandId: 2,
+		closingDate: "2026-12-31T00:00:00.000Z",
+		description: "Build software.",
+		responsibilities: "Write and review code.",
+		numberOfOpenPositions: 2,
+	};
+
+	it("creates a job role from a valid request", async () => {
+		const createdJobRole = { jobRoleId: 4, roleName: validBody.roleName };
+		const createJobRole = vi.fn().mockResolvedValue(createdJobRole);
+		const controller = new JobRolesController(
+			createFakeCreateService(createJobRole),
+		);
+		const res = createMockResponse();
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.createJobRole(
+			{ body: validBody } as unknown as Request,
+			res,
+			next,
+		);
+
+		expect(createJobRole).toHaveBeenCalledWith({
+			...validBody,
+			closingDate: new Date(validBody.closingDate),
+		});
+		expect(res.status).toHaveBeenCalledWith(201);
+		expect(res.json).toHaveBeenCalledWith(createdJobRole);
+	});
+
+	it.each([
+		["missing role name", { roleName: "" }],
+		["invalid capability ID", { capabilityId: 0 }],
+		["invalid closing date", { closingDate: "not-a-date" }],
+		["invalid position count", { numberOfOpenPositions: 0 }],
+	])("rejects %s before calling the service", async (_caseName, override) => {
+		const createJobRole = vi.fn();
+		const controller = new JobRolesController(
+			createFakeCreateService(createJobRole),
+		);
+		const res = createMockResponse();
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.createJobRole(
+			{ body: { ...validBody, ...override } } as unknown as Request,
+			res,
+			next,
+		);
+
+		expect(res.status).toHaveBeenCalledWith(400);
+		expect(createJobRole).not.toHaveBeenCalled();
+		expect(next).not.toHaveBeenCalled();
 	});
 });

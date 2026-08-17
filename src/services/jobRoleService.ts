@@ -6,10 +6,21 @@ import {
 	mapPrismaJobRoleToModel,
 } from "../models/jobRoleMapper.js";
 import type {
+	CreateJobRoleRequestModel,
 	JobRoleDetailedResponseModel,
 	JobRoleResponseModel,
 } from "../models/jobRoleModels.js";
 import prisma from "../prismaClient.js";
+
+export class JobRoleValidationError extends Error {
+	constructor(
+		message: string,
+		public readonly statusCode = 400,
+	) {
+		super(message);
+		this.name = "JobRoleValidationError";
+	}
+}
 
 // Service class for handling job role-related operations.
 export class JobRoleService {
@@ -47,6 +58,47 @@ export class JobRoleService {
 		}
 
 		logger.debug(`Queried job role ${jobRoleId} from the database`);
+		return mapJobRoleToDetailedResponseModel(mapPrismaJobRoleToModel(jobRole));
+	}
+
+	/** Creates an open job role linked to existing capability and band records. */
+	async createJobRole(
+		request: CreateJobRoleRequestModel,
+	): Promise<JobRoleDetailedResponseModel> {
+		const [capability, band, openStatus] = await Promise.all([
+			prisma.capability.findUnique({
+				where: { capabilityId: request.capabilityId },
+			}),
+			prisma.band.findUnique({ where: { bandId: request.bandId } }),
+			prisma.status.findUnique({ where: { statusName: "Open" } }),
+		]);
+
+		if (!capability) {
+			throw new JobRoleValidationError("Capability not found", 404);
+		}
+		if (!band) {
+			throw new JobRoleValidationError("Band not found", 404);
+		}
+		if (!openStatus) {
+			throw new Error('Required status "Open" is not configured');
+		}
+
+		const jobRole = await prisma.jobRole.create({
+			data: {
+				roleName: request.roleName,
+				location: request.location,
+				capabilityId: capability.capabilityId,
+				bandId: band.bandId,
+				closingDate: request.closingDate,
+				description: request.description,
+				responsibilities: request.responsibilities,
+				sharepointUrl: "https://sharepoint.example.com/job-roles/pending",
+				statusId: openStatus.statusId,
+				numberOfOpenPositions: request.numberOfOpenPositions,
+			},
+			include: jobRoleInclude,
+		});
+
 		return mapJobRoleToDetailedResponseModel(mapPrismaJobRoleToModel(jobRole));
 	}
 }

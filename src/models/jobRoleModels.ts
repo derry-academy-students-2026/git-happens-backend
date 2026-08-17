@@ -50,3 +50,14 @@ export class JobRoleDetailedResponseModel {
 		public readonly numberOfOpenPositions: number,
 	) {} // validation logic here
 }
+
+export interface CreateJobRoleRequestModel {
+	roleName: string;
+	location: string;
+	capabilityId: number;
+	bandId: number;
+	closingDate: Date;
+	description: string;
+	responsibilities: string;
+	numberOfOpenPositions: number;
+}

@@ -4,6 +4,10 @@ import { JobRolesController } from "../controllers/jobRoleController.js";
 const jobRoleRouter = Router();
 const jobRolesController = new JobRolesController();
 
+jobRoleRouter.post("/", (req, res, next) =>
+	jobRolesController.createJobRole(req, res, next),
+);
+
 /**
  * Handles GET / requests.
  * Fetches all job roles from the controller and sends them in the response.
