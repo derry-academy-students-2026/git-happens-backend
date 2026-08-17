@@ -34,6 +34,17 @@ export class JobRoleResponseModel {
 	) {} // validation logic here
 }
 
+// paginated page of job roles as exposed to API consumers in list views
+export class PaginatedJobRolesResponseModel {
+	constructor(
+		public readonly jobRoles: JobRoleResponseModel[],
+		public readonly page: number,
+		public readonly pageSize: number,
+		public readonly totalCount: number,
+		public readonly totalPages: number,
+	) {}
+}
+
 // job role as exposed to API consumers on the single role detail view
 export class JobRoleDetailedResponseModel {
 	constructor(
