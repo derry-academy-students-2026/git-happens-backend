@@ -28,7 +28,9 @@ const findCapability = prisma.capability.findUnique as unknown as ReturnType<
 	typeof vi.fn
 >;
 const findBand = prisma.band.findUnique as unknown as ReturnType<typeof vi.fn>;
-const findStatus = prisma.status.findUnique as unknown as ReturnType<typeof vi.fn>;
+const findStatus = prisma.status.findUnique as unknown as ReturnType<
+	typeof vi.fn
+>;
 
 const capability = new CapabilityModel(1, "Software Engineering");
 const band = new BandModel(2, "Band 3 - Senior");
@@ -142,6 +144,13 @@ describe("JobRoleService.getJobRoleById", () => {
 });
 
 describe("JobRoleService.createJobRole", () => {
+	beforeEach(() => {
+		findCapability.mockReset();
+		findBand.mockReset();
+		findStatus.mockReset();
+		create.mockReset();
+	});
+
 	it("creates a role using existing references and Open status", async () => {
 		findCapability.mockResolvedValue({ capabilityId: 1 });
 		findBand.mockResolvedValue({ bandId: 2 });
