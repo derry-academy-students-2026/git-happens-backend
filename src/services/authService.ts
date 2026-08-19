@@ -1,9 +1,6 @@
-import { randomUUID } from "node:crypto";
 import argon2 from "argon2";
 import type { SignOptions } from "jsonwebtoken";
 import jwt from "jsonwebtoken";
-import logger from "../lib/logger.js";
-import { maskEmail } from "../lib/maskEmail.js";
 import {
 	LoginUserResponseModel,
 	RegisterUserResponseModel,
@@ -42,7 +39,6 @@ export class AuthService {
 		password: string,
 	): Promise<RegisterUserResponseModel> {
 		const normalizedEmail = email.trim().toLowerCase();
-		logger.info("Registering user", { email: maskEmail(normalizedEmail) });
 		this.validateEmail(normalizedEmail);
 		this.validatePassword(password);
 
@@ -78,11 +74,6 @@ export class AuthService {
 					"An account with this email already exists",
 				);
 			}
-
-			logger.error("User registration failed with unexpected error", {
-				email: maskEmail(normalizedEmail),
-				error,
-			});
 			throw error;
 		}
 	}
@@ -99,9 +90,6 @@ export class AuthService {
 		password: string,
 	): Promise<LoginUserResponseModel> {
 		const normalizedEmail = email.trim().toLowerCase();
-		logger.info("Attempting user login", {
-			email: maskEmail(normalizedEmail),
-		});
 
 		const user = await prisma.user.findUnique({
 			where: { email: normalizedEmail },
@@ -111,27 +99,14 @@ export class AuthService {
 		// One error for both unknown email and wrong password, so the response
 		// cannot be used to discover which accounts exist.
 		if (!user || !(await this.verifyPassword(user.passwordHash, password))) {
-			logger.warn("Login denied due to invalid credentials", {
-				email: maskEmail(normalizedEmail),
-			});
 			throw new AuthUnauthorizedError("Invalid email or password");
 		}
 
 		const token = jwt.sign(
-			{
-				sub: String(user.id),
-				email: user.email,
-				role: user.role.roleName,
-				jti: randomUUID(),
-			},
+			{ sub: user.id, email: user.email },
 			this.getJwtSecret(),
 			{ expiresIn: TOKEN_EXPIRY },
 		);
-
-		logger.info("Login succeeded", {
-			email: maskEmail(user.email),
-			role: user.role.roleName,
-		});
 
 		return new LoginUserResponseModel(token, user.email, user.role.roleName);
 	}
@@ -151,7 +126,6 @@ export class AuthService {
 		try {
 			return await argon2.verify(passwordHash, password);
 		} catch {
-			logger.warn("Password verification failed due to malformed hash");
 			// Thrown when the stored hash is malformed; treat as a failed login.
 			return false;
 		}
@@ -165,7 +139,6 @@ export class AuthService {
 	private getJwtSecret(): string {
 		const secret = process.env.JWT_SECRET;
 		if (!secret) {
-			logger.error("JWT_SECRET environment variable is not set");
 			throw new Error("JWT_SECRET environment variable is not set");
 		}
 		return secret;

@@ -25,6 +25,10 @@ const getJobRoleById = jobRoleService.getJobRoleById as unknown as ReturnType<
 	typeof vi.fn
 >;
 
+/**
+ * creates an Express app with the jobRoleRouter mounted and an error handler for testing.
+ * @returns An Express application instance.
+ */
 function createApp() {
 	const app = express();
 	app.use("/job-roles", jobRoleRouter);
@@ -41,6 +45,9 @@ function createApp() {
 	return app;
 }
 
+/**
+ * Test suite for the jobRoleRouter, covering both successful and error scenarios for the GET endpoints.
+ */
 describe("jobRoleRouter", () => {
 	beforeEach(() => {
 		getJobRoles.mockReset();
