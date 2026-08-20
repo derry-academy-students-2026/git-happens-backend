@@ -10,6 +10,21 @@ import type {
 // PrismaClient works fine with v6
 const prisma = new PrismaClient();
 
+async function createUser(userEmail: string, passwordHash: string, userRole: string) {
+
+		await prisma.user.upsert({
+		where: { email: userEmail },
+		update: { passwordHash },
+		create: {
+			email: userEmail,
+			passwordHash,
+			role: { connect: { roleName: userRole } },
+		},
+	});
+
+}
+
+
 async function main() {
 	// Create capabilities first
 	await prisma.capability.createMany({
@@ -274,12 +289,17 @@ async function main() {
 
 	// Seed an example login user with an argon2 password hash.
 	const passwordHash = await argon2.hash("password123!");
+	const adminEmail = "admin1@example.com";
+	const userEmail = "test1@example.com";
+
+	await createUser(userEmail, passwordHash, "user");	
+	await createUser(adminEmail, passwordHash, "admin");
 
 	await prisma.user.upsert({
 		where: { email: "test1@example.com" },
 		update: { passwordHash },
 		create: {
-			email: "test1@example.com",
+			email: userEmail,
 			passwordHash,
 			role: { connect: { roleName: "user" } },
 		},
@@ -288,10 +308,10 @@ async function main() {
 	// Separate admin account so the write-access paths can be exercised without
 	// escalating the read-only example user.
 	await prisma.user.upsert({
-		where: { email: "admin1@example.com" },
+		where: { email: adminEmail },
 		update: { passwordHash },
 		create: {
-			email: "admin1@example.com",
+			email: adminEmail,
 			passwordHash,
 			role: { connect: { roleName: "admin" } },
 		},
