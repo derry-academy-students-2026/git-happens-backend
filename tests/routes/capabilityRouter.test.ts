@@ -2,15 +2,19 @@ import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The router constructs its own service, so the class is mocked and every
+// instance shares this spy.
+const serviceMocks = vi.hoisted(() => ({ getCapabilities: vi.fn() }));
+
 vi.mock("../../src/services/capabilityService.js", () => ({
-	capabilityService: { getCapabilities: vi.fn() },
+	CapabilityService: class {
+		getCapabilities = serviceMocks.getCapabilities;
+	},
 }));
 
 import capabilityRouter from "../../src/routes/capabilityRouter.js";
-import { capabilityService } from "../../src/services/capabilityService.js";
 
-const getCapabilities =
-	capabilityService.getCapabilities as unknown as ReturnType<typeof vi.fn>;
+const { getCapabilities } = serviceMocks;
 
 function createApp() {
 	const app = express();

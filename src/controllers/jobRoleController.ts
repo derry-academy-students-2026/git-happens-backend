@@ -1,9 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
+import { JobRoleValidationError } from "../errors/customErrors.js";
 import logger from "../lib/logger.js";
-import {
-	JobRoleValidationError,
-	jobRoleService,
-} from "../services/jobRoleService.js";
+import type { JobRoleService } from "../services/jobRoleService.js";
+import type { CreateJobRoleRequestDto } from "../validation/jobRoleSchemas.js";
 
 /**
  * @param service - The job role service instance used to fetch job role data.
@@ -11,7 +10,7 @@ import {
  * It interacts with the jobRoleService to fetch job role data and sends appropriate responses.
  */
 export class JobRolesController {
-	constructor(private service = jobRoleService) {}
+	constructor(private service: JobRoleService) {}
 
 	/**
 	 * Fetches all job roles from the service and sends them in the response.
@@ -78,75 +77,21 @@ export class JobRolesController {
 		}
 	}
 
-	/** Validates and creates a new job role. */
+	/**
+	 * Creates a new job role from a body already validated by `validateBody`.
+	 * @param req - The Express request object, whose body holds the new job role.
+	 * @param res - The Express response object.
+	 * @param next - The next middleware function in the Express request-response cycle.
+	 */
 	async createJobRole(
 		req: Request,
 		res: Response,
 		next: NextFunction,
 	): Promise<void> {
 		try {
-			const body = req.body as Record<string, unknown> | undefined;
-			const requestModel = {
-				roleName: body?.roleName,
-				location: body?.location,
-				capabilityId: body?.capabilityId,
-				bandId: body?.bandId,
-				closingDate: body?.closingDate,
-				description: body?.description,
-				responsibilities: body?.responsibilities,
-				numberOfOpenPositions: body?.numberOfOpenPositions,
-			};
-
-			const textFields = [
-				requestModel.roleName,
-				requestModel.location,
-				requestModel.description,
-				requestModel.responsibilities,
-			];
-			if (
-				textFields.some(
-					(value) => typeof value !== "string" || value.trim().length === 0,
-				) ||
-				typeof requestModel.capabilityId !== "number" ||
-				typeof requestModel.bandId !== "number" ||
-				!Number.isInteger(requestModel.capabilityId) ||
-				!Number.isInteger(requestModel.bandId) ||
-				requestModel.capabilityId <= 0 ||
-				requestModel.bandId <= 0 ||
-				typeof requestModel.numberOfOpenPositions !== "number" ||
-				!Number.isInteger(requestModel.numberOfOpenPositions) ||
-				requestModel.numberOfOpenPositions <= 0 ||
-				typeof requestModel.closingDate !== "string" ||
-				Number.isNaN(Date.parse(requestModel.closingDate))
-			) {
-				res.status(400).json({ message: "Invalid job role details" });
-				return;
-			}
-
-			const closingDate = new Date(requestModel.closingDate);
-			if (closingDate.getTime() <= Date.now()) {
-				logger.warn(
-					`Rejected job role with closing date in the past: ${requestModel.closingDate}`,
-				);
-				res.status(400).json({ message: "Closing date must be in the future" });
-				return;
-			}
-
-			const roleName = requestModel.roleName as string;
-			const location = requestModel.location as string;
-			const description = requestModel.description as string;
-			const responsibilities = requestModel.responsibilities as string;
-
-			const jobRole = await this.service.createJobRole({
-				roleName: roleName.trim(),
-				location: location.trim(),
-				capabilityId: requestModel.capabilityId,
-				bandId: requestModel.bandId,
-				closingDate,
-				description: description.trim(),
-				responsibilities: responsibilities.trim(),
-				numberOfOpenPositions: requestModel.numberOfOpenPositions,
-			});
+			const jobRole = await this.service.createJobRole(
+				req.body as CreateJobRoleRequestDto,
+			);
 			res.status(201).json(jobRole);
 		} catch (error) {
 			if (error instanceof JobRoleValidationError) {

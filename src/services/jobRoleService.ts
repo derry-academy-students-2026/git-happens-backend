@@ -1,3 +1,4 @@
+import { JobRoleValidationError } from "../errors/customErrors.js";
 import logger from "../lib/logger.js";
 import {
 	jobRoleInclude,
@@ -14,16 +15,6 @@ import prisma from "../prismaClient.js";
 
 const PENDING_SHAREPOINT_URL =
 	"https://sharepoint.example.com/job-roles/pending";
-
-export class JobRoleValidationError extends Error {
-	constructor(
-		message: string,
-		public readonly statusCode = 400,
-	) {
-		super(message);
-		this.name = "JobRoleValidationError";
-	}
-}
 
 // Service class for handling job role-related operations.
 export class JobRoleService {
@@ -108,5 +99,3 @@ export class JobRoleService {
 		return mapJobRoleToDetailedResponseModel(mapPrismaJobRoleToModel(jobRole));
 	}
 }
-
-export const jobRoleService = new JobRoleService();

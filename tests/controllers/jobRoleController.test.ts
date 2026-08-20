@@ -11,6 +11,7 @@ vi.mock("../../src/lib/logger.js", () => ({
 }));
 
 import { JobRolesController } from "../../src/controllers/jobRoleController.js";
+import { JobRoleValidationError } from "../../src/errors/customErrors.js";
 import { BandModel } from "../../src/models/bandModels.js";
 import { CapabilityModel } from "../../src/models/capabilityModels.js";
 import {
@@ -178,19 +179,22 @@ describe("JobRolesController.getJobRoleById", () => {
 });
 
 describe("JobRolesController.createJobRole", () => {
-	const validBody = {
+	// The body reaching the controller has already been through validateBody,
+	// so closingDate arrives as a Date. Validation itself is covered by
+	// tests/middleware/validateRequest.test.ts and the integration suite.
+	const validatedBody = {
 		roleName: "Senior Software Engineer",
 		location: "Remote",
 		capabilityId: 1,
 		bandId: 2,
-		closingDate: "2026-12-31T00:00:00.000Z",
+		closingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
 		description: "Build software.",
 		responsibilities: "Write and review code.",
 		numberOfOpenPositions: 2,
 	};
 
-	it("creates a job role from a valid request", async () => {
-		const createdJobRole = { jobRoleId: 4, roleName: validBody.roleName };
+	it("creates a job role from a validated request body", async () => {
+		const createdJobRole = { jobRoleId: 4, roleName: validatedBody.roleName };
 		const createJobRole = vi.fn().mockResolvedValue(createdJobRole);
 		const controller = new JobRolesController(
 			createFakeCreateService(createJobRole),
@@ -199,27 +203,20 @@ describe("JobRolesController.createJobRole", () => {
 		const next = vi.fn() as unknown as NextFunction;
 
 		await controller.createJobRole(
-			{ body: validBody } as unknown as Request,
+			{ body: validatedBody } as unknown as Request,
 			res,
 			next,
 		);
 
-		expect(createJobRole).toHaveBeenCalledWith({
-			...validBody,
-			closingDate: new Date(validBody.closingDate),
-		});
+		expect(createJobRole).toHaveBeenCalledWith(validatedBody);
 		expect(res.status).toHaveBeenCalledWith(201);
 		expect(res.json).toHaveBeenCalledWith(createdJobRole);
 	});
 
-	it.each([
-		["missing role name", { roleName: "" }],
-		["invalid capability ID", { capabilityId: 0 }],
-		["invalid closing date", { closingDate: "not-a-date" }],
-		["closing date in the past", { closingDate: "2020-01-01T00:00:00.000Z" }],
-		["invalid position count", { numberOfOpenPositions: 0 }],
-	])("rejects %s before calling the service", async (_caseName, override) => {
-		const createJobRole = vi.fn();
+	it("returns the status carried by a JobRoleValidationError", async () => {
+		const createJobRole = vi
+			.fn()
+			.mockRejectedValue(new JobRoleValidationError("Band not found", 404));
 		const controller = new JobRolesController(
 			createFakeCreateService(createJobRole),
 		);
@@ -227,13 +224,32 @@ describe("JobRolesController.createJobRole", () => {
 		const next = vi.fn() as unknown as NextFunction;
 
 		await controller.createJobRole(
-			{ body: { ...validBody, ...override } } as unknown as Request,
+			{ body: validatedBody } as unknown as Request,
 			res,
 			next,
 		);
 
-		expect(res.status).toHaveBeenCalledWith(400);
-		expect(createJobRole).not.toHaveBeenCalled();
+		expect(res.status).toHaveBeenCalledWith(404);
+		expect(res.json).toHaveBeenCalledWith({ message: "Band not found" });
 		expect(next).not.toHaveBeenCalled();
+	});
+
+	it("forwards unexpected errors to the error handler", async () => {
+		const error = new Error("db down");
+		const createJobRole = vi.fn().mockRejectedValue(error);
+		const controller = new JobRolesController(
+			createFakeCreateService(createJobRole),
+		);
+		const res = createMockResponse();
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.createJobRole(
+			{ body: validatedBody } as unknown as Request,
+			res,
+			next,
+		);
+
+		expect(next).toHaveBeenCalledWith(error);
+		expect(res.status).not.toHaveBeenCalled();
 	});
 });

@@ -12,5 +12,3 @@ export class BandService {
 		);
 	}
 }
-
-export const bandService = new BandService();

@@ -122,6 +122,14 @@ import { authService } from "../../src/services/authService.js";
 
 const TEST_SECRET = "add-new-role-integration-secret";
 
+// Derived rather than hard-coded so the suite cannot expire.
+const FUTURE_CLOSING_DATE = new Date(
+	Date.now() + 30 * 24 * 60 * 60 * 1000,
+).toISOString();
+const PAST_CLOSING_DATE = new Date(
+	Date.now() - 24 * 60 * 60 * 1000,
+).toISOString();
+
 /** Signs a token carrying the claims the auth middleware requires. */
 function createToken(role: string): string {
 	return jwt.sign(
@@ -138,7 +146,7 @@ function validRoleRequest(overrides: Record<string, unknown> = {}) {
 		location: "Belfast",
 		capabilityId: 1,
 		bandId: 3,
-		closingDate: "2026-12-31T00:00:00.000Z",
+		closingDate: FUTURE_CLOSING_DATE,
 		description: "Builds and maintains delivery software.",
 		responsibilities: "Write code, review pull requests, support releases.",
 		numberOfOpenPositions: 4,
@@ -182,7 +190,7 @@ describe("POST /job-roles (add new role integration)", () => {
 			responsibilities: "Write code, review pull requests, support releases.",
 			numberOfOpenPositions: 4,
 		});
-		expect(response.body.closingDate).toBe("2026-12-31T00:00:00.000Z");
+		expect(response.body.closingDate).toBe(FUTURE_CLOSING_DATE);
 		expect(db.jobRoles).toHaveLength(1);
 	});
 
@@ -270,7 +278,8 @@ describe("POST /job-roles (add new role integration)", () => {
 			.send(validRoleRequest(overrides));
 
 		expect(response.status).toBe(400);
-		expect(response.body).toEqual({ message: "Invalid job role details" });
+		expect(response.body.message).toBe("Invalid job role details");
+		expect(response.body.errors.length).toBeGreaterThan(0);
 		expect(db.jobRoles).toHaveLength(0);
 	});
 
@@ -278,10 +287,11 @@ describe("POST /job-roles (add new role integration)", () => {
 		const response = await request(app)
 			.post("/job-roles")
 			.set("Authorization", `Bearer ${createToken("admin")}`)
-			.send(validRoleRequest({ closingDate: "2020-01-01T00:00:00.000Z" }));
+			.send(validRoleRequest({ closingDate: PAST_CLOSING_DATE }));
 
 		expect(response.status).toBe(400);
-		expect(response.body).toEqual({
+		expect(response.body.errors).toContainEqual({
+			field: "closingDate",
 			message: "Closing date must be in the future",
 		});
 		expect(db.jobRoles).toHaveLength(0);

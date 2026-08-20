@@ -2,14 +2,19 @@ import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The router constructs its own service, so the class is mocked and every
+// instance shares this spy.
+const serviceMocks = vi.hoisted(() => ({ getBands: vi.fn() }));
+
 vi.mock("../../src/services/bandService.js", () => ({
-	bandService: { getBands: vi.fn() },
+	BandService: class {
+		getBands = serviceMocks.getBands;
+	},
 }));
 
 import bandRouter from "../../src/routes/bandRouter.js";
-import { bandService } from "../../src/services/bandService.js";
 
-const getBands = bandService.getBands as unknown as ReturnType<typeof vi.fn>;
+const { getBands } = serviceMocks;
 
 function createApp() {
 	const app = express();

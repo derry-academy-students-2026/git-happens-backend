@@ -11,19 +11,25 @@ vi.mock("../../src/lib/logger.js", () => ({
 	},
 }));
 
+// The router constructs its own service, so the class is mocked and every
+// instance shares these spies.
+const serviceMocks = vi.hoisted(() => ({
+	getJobRoles: vi.fn(),
+	getJobRoleById: vi.fn(),
+	createJobRole: vi.fn(),
+}));
+
 vi.mock("../../src/services/jobRoleService.js", () => ({
-	jobRoleService: { getJobRoles: vi.fn(), getJobRoleById: vi.fn() },
+	JobRoleService: class {
+		getJobRoles = serviceMocks.getJobRoles;
+		getJobRoleById = serviceMocks.getJobRoleById;
+		createJobRole = serviceMocks.createJobRole;
+	},
 }));
 
 import jobRoleRouter from "../../src/routes/jobRoleRouter.js";
-import { jobRoleService } from "../../src/services/jobRoleService.js";
 
-const getJobRoles = jobRoleService.getJobRoles as unknown as ReturnType<
-	typeof vi.fn
->;
-const getJobRoleById = jobRoleService.getJobRoleById as unknown as ReturnType<
-	typeof vi.fn
->;
+const { getJobRoles, getJobRoleById } = serviceMocks;
 
 /**
  * creates an Express app with the jobRoleRouter mounted and an error handler for testing.

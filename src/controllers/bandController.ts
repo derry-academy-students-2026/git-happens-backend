@@ -1,13 +1,13 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../lib/logger.js";
-import { bandService } from "../services/bandService.js";
+import type { BandService } from "../services/bandService.js";
 
 /**
  * Controller class for handling band-related requests.
  * @param service - The band service instance used to fetch band data.
  */
 export class BandController {
-	constructor(private service = bandService) {}
+	constructor(private service: BandService) {}
 
 	/**
 	 * Fetches all bands from the service and sends them in the response.

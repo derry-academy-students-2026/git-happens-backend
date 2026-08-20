@@ -16,5 +16,3 @@ export class CapabilityService {
 		);
 	}
 }
-
-export const capabilityService = new CapabilityService();
