@@ -281,7 +281,7 @@ async function main() {
 		create: {
 			email: "test1@example.com",
 			passwordHash,
-			role: { connect: { roleName: "user" } },
+			role: { connect: { roleName: "admin" } },
 		},
 	});
 }
