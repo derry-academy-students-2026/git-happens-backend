@@ -12,6 +12,9 @@ import type {
 } from "../models/jobRoleModels.js";
 import prisma from "../prismaClient.js";
 
+const PENDING_SHAREPOINT_URL =
+	"https://sharepoint.example.com/job-roles/pending";
+
 export class JobRoleValidationError extends Error {
 	constructor(
 		message: string,
@@ -92,13 +95,16 @@ export class JobRoleService {
 				closingDate: request.closingDate,
 				description: request.description,
 				responsibilities: request.responsibilities,
-				sharepointUrl: "https://sharepoint.example.com/job-roles/pending",
+				// TODO: the sharepoint document is created out of band, so a placeholder
+				// is stored until the real URL can be supplied on the request model.
+				sharepointUrl: PENDING_SHAREPOINT_URL,
 				statusId: openStatus.statusId,
 				numberOfOpenPositions: request.numberOfOpenPositions,
 			},
 			include: jobRoleInclude,
 		});
 
+		logger.info(`Created job role ${jobRole.jobRoleId}`);
 		return mapJobRoleToDetailedResponseModel(mapPrismaJobRoleToModel(jobRole));
 	}
 }

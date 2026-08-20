@@ -216,6 +216,7 @@ describe("JobRolesController.createJobRole", () => {
 		["missing role name", { roleName: "" }],
 		["invalid capability ID", { capabilityId: 0 }],
 		["invalid closing date", { closingDate: "not-a-date" }],
+		["closing date in the past", { closingDate: "2020-01-01T00:00:00.000Z" }],
 		["invalid position count", { numberOfOpenPositions: 0 }],
 	])("rejects %s before calling the service", async (_caseName, override) => {
 		const createJobRole = vi.fn();

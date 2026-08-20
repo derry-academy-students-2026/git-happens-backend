@@ -122,6 +122,16 @@ export class JobRolesController {
 				res.status(400).json({ message: "Invalid job role details" });
 				return;
 			}
+
+			const closingDate = new Date(requestModel.closingDate);
+			if (closingDate.getTime() <= Date.now()) {
+				logger.warn(
+					`Rejected job role with closing date in the past: ${requestModel.closingDate}`,
+				);
+				res.status(400).json({ message: "Closing date must be in the future" });
+				return;
+			}
+
 			const roleName = requestModel.roleName as string;
 			const location = requestModel.location as string;
 			const description = requestModel.description as string;
@@ -132,7 +142,7 @@ export class JobRolesController {
 				location: location.trim(),
 				capabilityId: requestModel.capabilityId,
 				bandId: requestModel.bandId,
-				closingDate: new Date(requestModel.closingDate),
+				closingDate,
 				description: description.trim(),
 				responsibilities: responsibilities.trim(),
 				numberOfOpenPositions: requestModel.numberOfOpenPositions,

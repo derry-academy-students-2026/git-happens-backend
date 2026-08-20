@@ -1,3 +1,4 @@
+import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -33,6 +34,12 @@ const db = vi.hoisted(() => {
 		],
 		jobRoles: [] as JobRoleRow[],
 		nextJobRoleId: 1,
+		users: [] as {
+			id: number;
+			email: string;
+			passwordHash: string;
+			role: { roleName: string };
+		}[],
 	};
 });
 
@@ -100,11 +107,18 @@ vi.mock("../../src/prismaClient.js", () => {
 				),
 				findMany: vi.fn(async () => db.jobRoles.map(withRelations)),
 			},
+			user: {
+				findUnique: vi.fn(
+					async ({ where }: { where: { email: string } }) =>
+						db.users.find((user) => user.email === where.email) ?? null,
+				),
+			},
 		},
 	};
 });
 
 import app from "../../src/app.js";
+import { authService } from "../../src/services/authService.js";
 
 const TEST_SECRET = "add-new-role-integration-secret";
 
@@ -138,6 +152,7 @@ describe("POST /job-roles (add new role integration)", () => {
 	beforeEach(() => {
 		process.env.JWT_SECRET = TEST_SECRET;
 		db.jobRoles.length = 0;
+		db.users.length = 0;
 		db.nextJobRoleId = 1;
 	});
 
@@ -259,6 +274,19 @@ describe("POST /job-roles (add new role integration)", () => {
 		expect(db.jobRoles).toHaveLength(0);
 	});
 
+	it("returns 400 when the closing date is in the past", async () => {
+		const response = await request(app)
+			.post("/job-roles")
+			.set("Authorization", `Bearer ${createToken("admin")}`)
+			.send(validRoleRequest({ closingDate: "2020-01-01T00:00:00.000Z" }));
+
+		expect(response.status).toBe(400);
+		expect(response.body).toEqual({
+			message: "Closing date must be in the future",
+		});
+		expect(db.jobRoles).toHaveLength(0);
+	});
+
 	it("returns 404 when the capability does not exist", async () => {
 		const response = await request(app)
 			.post("/job-roles")
@@ -279,5 +307,29 @@ describe("POST /job-roles (add new role integration)", () => {
 		expect(response.status).toBe(404);
 		expect(response.body).toEqual({ message: "Band not found" });
 		expect(db.jobRoles).toHaveLength(0);
+	});
+
+	// Guards the login -> create-role contract: a token minted by authService must
+	// carry every claim the auth middleware requires.
+	it("accepts a token issued by the real login flow", async () => {
+		db.users.push({
+			id: 7,
+			email: "admin1@example.com",
+			passwordHash: await argon2.hash("password123!"),
+			role: { roleName: "admin" },
+		});
+
+		const login = await authService.loginUser(
+			"admin1@example.com",
+			"password123!",
+		);
+
+		const response = await request(app)
+			.post("/job-roles")
+			.set("Authorization", `Bearer ${login.token}`)
+			.send(validRoleRequest());
+
+		expect(response.status).toBe(201);
+		expect(db.jobRoles).toHaveLength(1);
 	});
 });

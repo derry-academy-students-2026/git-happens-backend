@@ -281,6 +281,18 @@ async function main() {
 		create: {
 			email: "test1@example.com",
 			passwordHash,
+			role: { connect: { roleName: "user" } },
+		},
+	});
+
+	// Separate admin account so the write-access paths can be exercised without
+	// escalating the read-only example user.
+	await prisma.user.upsert({
+		where: { email: "admin1@example.com" },
+		update: { passwordHash },
+		create: {
+			email: "admin1@example.com",
+			passwordHash,
 			role: { connect: { roleName: "admin" } },
 		},
 	});
