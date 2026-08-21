@@ -90,7 +90,6 @@ export class AuthController {
 			next(error);
 		}
 	}
-
 }
 
 export const authController = new AuthController(authService);
