@@ -1,8 +1,8 @@
 # Prisma and argon2 need OpenSSL/glibc, so a slim Debian base is used rather than Alpine
 ARG NODE_IMAGE=node:22-bookworm-slim
 
-# --- Build stage: full dependency graph so the Prisma client can be generated ---
-FROM ${NODE_IMAGE} AS build
+# --- Dependencies stage: full dependency graph, shared by the build and prune stages ---
+FROM ${NODE_IMAGE} AS deps
 WORKDIR /app
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends openssl ca-certificates \
@@ -13,19 +13,17 @@ RUN touch /tmp/ca-bundle.crt && cat /tmp/certs/*.crt >> /tmp/ca-bundle.crt 2>/de
 ENV NODE_EXTRA_CA_CERTS=/tmp/ca-bundle.crt
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
+
+# --- Build stage: generate the Prisma client against the app source ---
+FROM deps AS build
 COPY prisma ./prisma
 COPY src ./src
 # emits the client and the Linux query engine into src/generated/prisma
 RUN npx prisma generate
 
-# --- Production dependencies stage: install only what's needed to run ---
-FROM ${NODE_IMAGE} AS prod-deps
-WORKDIR /app
-COPY package.json certs*/ /tmp/certs/
-RUN touch /tmp/ca-bundle.crt && cat /tmp/certs/*.crt >> /tmp/ca-bundle.crt 2>/dev/null || true
-ENV NODE_EXTRA_CA_CERTS=/tmp/ca-bundle.crt
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts
+# --- Production dependencies stage: strip dev packages from the existing install ---
+FROM deps AS prod-deps
+RUN npm prune --omit=dev
 
 # --- Runtime stage: prod deps, app source and the generated Prisma client only ---
 FROM ${NODE_IMAGE} AS runtime
