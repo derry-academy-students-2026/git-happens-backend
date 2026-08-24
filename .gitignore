@@ -40,6 +40,7 @@ Thumbs.db
 /src/generated/prisma
 
 #Other
+/code_reviews
 .agent/skills/
 .claude/skills/
 .windsurf/skills/
@@ -47,3 +48,6 @@ skills-lock.json
 
 .github/copilot-instructions.md
 code_reviews/
+
+# exported corporate CA certs are local-only
+/certs/
