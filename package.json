@@ -19,7 +19,7 @@
 		"lint:fix": "biome lint --write .",
 		"postinstall": "npx prisma generate",
 		"env:setup": "[ -f .env ] || echo 'DATABASE_URL=\"postgresql://postgres:password@localhost:5432/job-board\"\nJWT_SECRET=fcc4e2eea5dd2d79152d019860f851db2fdc61ee7db6768b6de4cf4b92fe5f60' > .env",
-		"certs:export": "for cn in KAINOS-INSPECTION KAINOS-ROOT-CA 'Zscaler Root CA'; do security find-certificate -a -c \"$cn\" -p /Library/Keychains/System.keychain; done > certs/corporate-root-ca.crt",
+		"certs:export": "mkdir certs && touch certs/corporate-root-ca.crt && for cn in KAINOS-INSPECTION KAINOS-ROOT-CA 'Zscaler Root CA'; do security find-certificate -a -c \"$cn\" -p /Library/Keychains/System.keychain; done > certs/corporate-root-ca.crt",
 		"db:migrate": "npx prisma migrate dev",
 		"db:sync": "npm run env:setup && npx prisma generate && npx prisma migrate deploy",
 		"db:reset": "npx prisma migrate reset --force && npm run prisma:seed",
