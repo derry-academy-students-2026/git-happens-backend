@@ -1,23 +1,22 @@
 import type { NextFunction, Request, Response } from "express";
 import { z } from "zod";
+import { JobRoleValidationError } from "../errors/customErrors.js";
 import logger from "../lib/logger.js";
 import { ApplyForRoleRequestModel } from "../models/jobApplicationModels.js";
-import { jobRoleService } from "../services/jobRoleService.js";
+import type { JobRoleService } from "../services/jobRoleService.js";
 import {
 	JobRoleApplicationConflictError,
 	JobRoleApplicationValidationError,
 	JobRoleNotFoundError,
 } from "../services/jobRoleService.js";
+import type { CreateJobRoleRequestDto } from "../validation/jobRoleSchemas.js";
 
 const applyForRoleSchema = z.object({
 	fullName: z.string().trim().min(1, "Full name is required").max(120),
 	countryCode: z
 		.string()
 		.trim()
-		.regex(
-			/^\+\d{1,3}$/,
-			"Country code must be in format +XXX (e.g., +44)",
-		),
+		.regex(/^\+\d{1,3}$/, "Country code must be in format +XXX (e.g., +44)"),
 	phoneNumber: z
 		.string()
 		.trim()
@@ -27,10 +26,7 @@ const applyForRoleSchema = z.object({
 			/^[0-9\s\-()]+$/,
 			"Phone number can only contain numbers, spaces, hyphens, and parentheses",
 		),
-	email: z
-		.string()
-		.trim()
-		.email("Email must be a valid email address"),
+	email: z.string().trim().email("Email must be a valid email address"),
 	applicationText: z
 		.string()
 		.trim()
@@ -44,12 +40,11 @@ const applyForRoleSchema = z.object({
 });
 
 /**
- * @param service - The job role service instance used to fetch job role data.
  * Controller class for handling job role-related requests.
  * It interacts with the jobRoleService to fetch job role data and sends appropriate responses.
  */
 export class JobRolesController {
-	constructor(private service = jobRoleService) {}
+	constructor(private service: JobRoleService) {}
 
 	/**
 	 * Fetches all job roles from the service and sends them in the response.
@@ -154,7 +149,8 @@ export class JobRolesController {
 					issue: parsedBody.error.issues[0]?.message,
 				});
 				res.status(400).json({
-					message: parsedBody.error.issues[0]?.message ?? "Invalid request payload",
+					message:
+						parsedBody.error.issues[0]?.message ?? "Invalid request payload",
 				});
 				return;
 			}
@@ -208,6 +204,31 @@ export class JobRolesController {
 			const err = error instanceof Error ? error : new Error(String(error));
 			logger.error(`Failed to apply for role: ${err.stack ?? err.message}`);
 			next(err);
+		}
+	}
+
+	/**
+	 * Creates a new job role from a body already validated by `validateBody`.
+	 * @param req - The Express request object, whose body holds the new job role.
+	 * @param res - The Express response object.
+	 * @param next - The next middleware function in the Express request-response cycle.
+	 */
+	async createJobRole(
+		req: Request,
+		res: Response,
+		next: NextFunction,
+	): Promise<void> {
+		try {
+			const jobRole = await this.service.createJobRole(
+				req.body as CreateJobRoleRequestDto,
+			);
+			res.status(201).json(jobRole);
+		} catch (error) {
+			if (error instanceof JobRoleValidationError) {
+				res.status(error.statusCode).json({ message: error.message });
+				return;
+			}
+			next(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 }

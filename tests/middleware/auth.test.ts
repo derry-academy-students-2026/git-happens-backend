@@ -111,5 +111,4 @@ describe("auth middleware", () => {
 		expect(response.status).toBe(200);
 		expect(response.body).toEqual({ ok: true });
 	});
-
 });

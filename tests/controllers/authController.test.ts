@@ -130,7 +130,6 @@ describe("AuthController.register", () => {
 		expect(res.status).not.toHaveBeenCalled();
 	});
 });
-
 describe("AuthController.login", () => {
 	it("returns 200 and a token on successful login", async () => {
 		const service = createFakeLoginService(
@@ -222,4 +221,3 @@ describe("AuthController.login", () => {
 		expect(res.status).not.toHaveBeenCalled();
 	});
 });
-

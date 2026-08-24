@@ -63,7 +63,9 @@ function denyUnauthenticated(req: Request, res: Response): void {
  * @param authorizationHeader Authorization header value.
  * @returns Parsed token when present, otherwise null.
  */
-function parseBearerToken(authorizationHeader: string | undefined): string | null {
+function parseBearerToken(
+	authorizationHeader: string | undefined,
+): string | null {
 	if (!authorizationHeader?.startsWith(AUTH_SCHEME)) {
 		return null;
 	}
@@ -77,7 +79,9 @@ function parseBearerToken(authorizationHeader: string | undefined): string | nul
  * @param payload Decoded JWT payload.
  * @returns True when all required claims are present.
  */
-function hasRequiredClaims(payload: JwtPayload | string): payload is AuthTokenPayload {
+function hasRequiredClaims(
+	payload: JwtPayload | string,
+): payload is AuthTokenPayload {
 	if (typeof payload === "string") {
 		return false;
 	}

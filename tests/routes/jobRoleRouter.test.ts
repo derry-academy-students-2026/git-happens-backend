@@ -11,27 +11,32 @@ vi.mock("../../src/lib/logger.js", () => ({
 	},
 }));
 
+// The router constructs its own service, so the class is mocked and every
+// instance shares these spies.
+const serviceMocks = vi.hoisted(() => ({
+	getJobRoles: vi.fn(),
+	getJobRoleById: vi.fn(),
+	createJobRole: vi.fn(),
+	applyForRole: vi.fn(),
+}));
+
 vi.mock("../../src/services/jobRoleService.js", () => ({
-	jobRoleService: {
-		getJobRoles: vi.fn(),
-		getJobRoleById: vi.fn(),
-		applyForRole: vi.fn(),
+	JobRoleService: class {
+		getJobRoles = serviceMocks.getJobRoles;
+		getJobRoleById = serviceMocks.getJobRoleById;
+		createJobRole = serviceMocks.createJobRole;
+		applyForRole = serviceMocks.applyForRole;
 	},
 }));
 
 import jobRoleRouter from "../../src/routes/jobRoleRouter.js";
-import { jobRoleService } from "../../src/services/jobRoleService.js";
 
-const getJobRoles = jobRoleService.getJobRoles as unknown as ReturnType<
-	typeof vi.fn
->;
-const getJobRoleById = jobRoleService.getJobRoleById as unknown as ReturnType<
-	typeof vi.fn
->;
-const applyForRole = jobRoleService.applyForRole as unknown as ReturnType<
-	typeof vi.fn
->;
+const { getJobRoles, getJobRoleById, applyForRole } = serviceMocks;
 
+/**
+ * creates an Express app with the jobRoleRouter mounted and an error handler for testing.
+ * @returns An Express application instance.
+ */
 function createApp() {
 	const app = express();
 	app.use(express.json());
@@ -53,6 +58,10 @@ function createApp() {
 	return app;
 }
 
+/**
+ * Test suite for the jobRoleRouter, covering both successful and error
+ * scenarios for the GET endpoints.
+ */
 describe("jobRoleRouter", () => {
 	beforeEach(() => {
 		getJobRoles.mockReset();
