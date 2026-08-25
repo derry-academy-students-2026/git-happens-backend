@@ -76,3 +76,35 @@ npx prisma migrate reset          # drop the database and re-run every migration
 npx prisma generate               # regenerate the Prisma client after schema changes
 npx prisma studio                 # browse the data in a local UI
 ```
+
+## Docker
+
+```bash
+docker build -t git-happens-backend:docker-initial .
+
+docker run -d --name git-happens-api -p 4000:4000 --env-file .env \
+  -e DATABASE_URL="postgresql://postgres:password@host.docker.internal:5432/job-board" \
+  git-happens-backend:docker-initial
+
+docker logs -f git-happens-api
+```
+
+`DATABASE_URL` is overridden on the command line because `localhost` inside the
+container refers to the container itself, not the Postgres running on your machine.
+
+Health check: `http://localhost:4000/health`
+
+### Corporate proxy certificates
+
+On the Kainos network, TLS is inspected by Zscaler, so `prisma generate` inside
+the build fails with `unable to get local issuer certificate`. Export the
+corporate root CAs once, then build as normal:
+
+```bash
+npm run certs:export
+```
+
+This writes `certs/corporate-root-ca.crt`, which the build trusts via
+`NODE_EXTRA_CA_CERTS`. The `certs/` directory is gitignored and never reaches the
+runtime image. If you are not behind an inspecting proxy, skip this — the build
+works without it.
