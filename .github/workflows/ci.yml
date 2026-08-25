@@ -18,4 +18,4 @@ jobs:
       - run: npm run lint
       - run: npm test
       - name: Build Docker image
-        run: docker build --tag git-happens-frontend:${{ github.sha }} .
+        run: docker build --tag git-happens-backend:${{ github.sha }} .
