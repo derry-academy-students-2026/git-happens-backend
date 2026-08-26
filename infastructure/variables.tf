@@ -52,3 +52,15 @@ variable "tfstate_container_name" {
   type        = string
   default     = "tfstate"
 }
+
+variable "key_vault_name_prefix" {
+  description = "Lowercase prefix for the environment Key Vault name; a random suffix is added for Azure-wide uniqueness."
+  type        = string
+  default     = "githappens"
+
+  validation {
+    condition     = can(regex("^[a-z0-9]{3,16}$", var.key_vault_name_prefix))
+    error_message = "key_vault_name_prefix must be 3-16 lowercase letters or numbers."
+  }
+}
+
