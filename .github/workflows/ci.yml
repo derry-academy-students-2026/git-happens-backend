@@ -83,6 +83,7 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_USE_AZUREAD: true
       TF_VAR_environment: dev
+      TF_VAR_backend_image: acraiacademy26.azurecr.io/git-happens-backend:${{ github.sha }}
     defaults:
       run:
         working-directory: infastructure
@@ -112,6 +113,7 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_USE_AZUREAD: true
       TF_VAR_environment: dev
+      TF_VAR_backend_image: acraiacademy26.azurecr.io/git-happens-backend:${{ github.sha }}
     defaults:
       run:
         working-directory: infastructure
