@@ -27,3 +27,13 @@ output "key_vault_name" {
   description = "Name of the Key Vault for application secrets."
   value       = azurerm_key_vault.application.name
 }
+
+output "container_app_environment_id" {
+  description = "ID for the frontend Terraform to reuse this Container Apps environment."
+  value       = azurerm_container_app_environment.application.id
+}
+
+output "backend_identity_principal_id" {
+  description = "Principal ID to grant AcrPull and Key Vault Secrets User before deploying the backend Container App."
+  value       = azurerm_user_assigned_identity.backend.principal_id
+}
