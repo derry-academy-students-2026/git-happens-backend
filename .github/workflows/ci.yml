@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
     branches: [main]
 
@@ -71,3 +71,58 @@ jobs:
         run: |
           docker manifest inspect "$ACR_LOGIN_SERVER/git-happens-backend:$IMAGE_SHA"
           docker manifest inspect "$ACR_LOGIN_SERVER/git-happens-backend:latest"
+
+  terraform-plan:
+    name: Terraform plan
+    runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/main'
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_AZUREAD: true
+      TF_VAR_environment: dev
+    defaults:
+      run:
+        working-directory: infastructure
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive
+      - name: Initialize Terraform remote state
+        run: terraform init -input=false -backend-config=backend.hcl
+      - name: Validate Terraform
+        run: terraform validate
+      - name: Plan Terraform changes
+        run: terraform plan -input=false -no-color
+
+  terraform-deploy:
+    name: Terraform apply
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: push
+    runs-on: ubuntu-latest
+    concurrency:
+      group: terraform-dev
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_AZUREAD: true
+      TF_VAR_environment: dev
+    defaults:
+      run:
+        working-directory: infastructure
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Initialize Terraform remote state
+        run: terraform init -input=false -backend-config=backend.hcl
+      - name: Validate Terraform
+        run: terraform validate
+      - name: Plan Terraform changes
+        run: terraform plan -input=false -no-color -out=tfplan
+      - name: Apply Terraform changes
+        run: terraform apply -input=false -auto-approve tfplan
