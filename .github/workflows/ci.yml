@@ -8,7 +8,6 @@ on:
 
 env:
   ACR_LOGIN_SERVER: acraiacademy26.azurecr.io
-  DEPLOY_BACKEND: ${{ vars.DEPLOY_BACKEND || 'false' }}
 
 jobs:
   test:
@@ -84,8 +83,6 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_USE_AZUREAD: true
       TF_VAR_environment: dev
-      TF_VAR_deploy_backend: ${{ env.DEPLOY_BACKEND }}
-      TF_VAR_backend_image: ${{ env.ACR_LOGIN_SERVER }}/git-happens-backend:${{ github.sha }}
     defaults:
       run:
         working-directory: infastructure
@@ -115,8 +112,6 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_USE_AZUREAD: true
       TF_VAR_environment: dev
-      TF_VAR_deploy_backend: ${{ env.DEPLOY_BACKEND }}
-      TF_VAR_backend_image: ${{ env.ACR_LOGIN_SERVER }}/git-happens-backend:${{ github.sha }}
     defaults:
       run:
         working-directory: infastructure

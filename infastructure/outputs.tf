@@ -23,12 +23,7 @@ output "tfstate_container_name" {
   value       = azurerm_storage_container.tfstate.name
 }
 
-output "backend_url" {
-  description = "Public URL of the backend Container App, when deployment is enabled."
-  value       = var.deploy_backend ? "https://${azurerm_container_app.backend[0].ingress[0].fqdn}" : null
-}
-
 output "key_vault_name" {
-  description = "Name of the Key Vault where the backend runtime secrets must be added."
+  description = "Name of the Key Vault for application secrets."
   value       = azurerm_key_vault.application.name
 }
