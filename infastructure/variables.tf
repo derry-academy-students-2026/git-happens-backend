@@ -64,4 +64,15 @@ variable "key_vault_name_prefix" {
   }
 }
 
+variable "backend_image" {
+  description = "Fully qualified image reference for the backend Container App."
+  type        = string
+}
+
+variable "acr_login_server" {
+  description = "Login server for the existing Azure Container Registry containing backend images."
+  type        = string
+  default     = "acraiacademy26.azurecr.io"
+}
+
 

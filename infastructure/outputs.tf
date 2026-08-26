@@ -37,3 +37,8 @@ output "backend_identity_principal_id" {
   description = "Principal ID to grant AcrPull and Key Vault Secrets User before deploying the backend Container App."
   value       = azurerm_user_assigned_identity.backend.principal_id
 }
+
+output "backend_internal_hostname" {
+  description = "Internal hostname for frontend Container Apps in the same environment."
+  value       = azurerm_container_app.backend.latest_revision_fqdn
+}
