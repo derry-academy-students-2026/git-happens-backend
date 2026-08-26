@@ -52,3 +52,37 @@ variable "tfstate_container_name" {
   type        = string
   default     = "tfstate"
 }
+
+variable "deploy_backend" {
+  description = "Whether to deploy the backend Container App. Kept separate so another application can be added later."
+  type        = bool
+  default     = false
+}
+
+variable "backend_image" {
+  description = "Fully qualified ACR image reference for the backend Container App."
+  type        = string
+}
+
+variable "key_vault_name_prefix" {
+  description = "Lowercase prefix for the environment Key Vault name; a random suffix is added for Azure-wide uniqueness."
+  type        = string
+  default     = "githappens"
+
+  validation {
+    condition     = can(regex("^[a-z0-9]{3,16}$", var.key_vault_name_prefix))
+    error_message = "key_vault_name_prefix must be 3-16 lowercase letters or numbers."
+  }
+}
+
+variable "acr_name" {
+  description = "Name of the existing Azure Container Registry that stores application images."
+  type        = string
+  default     = "acraiacademy26"
+}
+
+variable "acr_resource_group_name" {
+  description = "Resource group containing the existing Azure Container Registry."
+  type        = string
+  default     = "rg-ai-academy-26"
+}

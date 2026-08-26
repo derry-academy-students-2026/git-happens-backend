@@ -19,14 +19,12 @@ provider "azurerm" {
   features {}
 }
 
-locals {
-  resource_group_name = coalesce(var.resource_group_name, "${var.project_name}-${var.environment}")
-}
+data "azurerm_client_config" "current" {}
 
 module "resource_group" {
   source = "./modules/resource-group"
 
-  resource_group_name = local.resource_group_name
+  resource_group_name = coalesce(var.resource_group_name, "${var.project_name}-${var.environment}")
   location            = var.location
 
   tags = merge(var.tags, {
