@@ -62,3 +62,10 @@ jobs:
           docker push "$SHA_TAG"
           docker tag "$SHA_TAG" "$IMAGE:latest"
           docker push "$IMAGE:latest"
+      - name: Verify images in Azure Container Registry
+        env:
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+          IMAGE_SHA: ${{ github.sha }}
+        run: |
+          docker manifest inspect "$ACR_LOGIN_SERVER/git-happens-backend:$IMAGE_SHA"
+          docker manifest inspect "$ACR_LOGIN_SERVER/git-happens-backend:latest"
