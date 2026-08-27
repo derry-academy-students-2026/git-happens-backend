@@ -47,3 +47,8 @@ resource "azurerm_key_vault_secret" "database_url" {
   key_vault_id = azurerm_key_vault.application.id
   value        = "postgresql://${var.postgres_admin_login}:${random_password.postgres_admin.result}@${azurerm_postgresql_flexible_server.application.fqdn}:5432/${var.postgres_database_name}?sslmode=require"
 }
+
+import {
+  to = azurerm_key_vault_secret.database_url
+  id = "https://githappensdev14454c.vault.azure.net/secrets/database-url/945cb82c6b474350811f637b90e2c2f4"
+}
