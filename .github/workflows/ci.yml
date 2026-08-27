@@ -157,8 +157,8 @@ jobs:
           echo "RUNNER_IP=$RUNNER_IP" >> "$GITHUB_ENV"
           az postgres flexible-server firewall-rule create \
             --resource-group "$POSTGRES_RESOURCE_GROUP" \
-            --name "$POSTGRES_SERVER_NAME" \
-            --rule-name "$POSTGRES_FIREWALL_RULE_NAME" \
+            --server-name "$POSTGRES_SERVER_NAME" \
+            --name "$POSTGRES_FIREWALL_RULE_NAME" \
             --start-ip-address "$RUNNER_IP" \
             --end-ip-address "$RUNNER_IP"
       - name: Apply pending Prisma migrations
@@ -173,6 +173,6 @@ jobs:
         run: |
           az postgres flexible-server firewall-rule delete \
             --resource-group "$POSTGRES_RESOURCE_GROUP" \
-            --name "$POSTGRES_SERVER_NAME" \
-            --rule-name "$POSTGRES_FIREWALL_RULE_NAME" \
+            --server-name "$POSTGRES_SERVER_NAME" \
+            --name "$POSTGRES_FIREWALL_RULE_NAME" \
             --yes
