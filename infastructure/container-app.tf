@@ -93,4 +93,7 @@ resource "azurerm_container_app" "backend" {
   tags = merge(var.tags, {
     environment = var.environment
   })
+
+  # ensures the database-url secret exists in Key Vault before the app tries to read it
+  depends_on = [azurerm_key_vault_secret.database_url]
 }
