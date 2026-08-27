@@ -168,6 +168,13 @@ jobs:
             --name database-url \
             --query value \
             --output tsv)" npx prisma migrate deploy
+      - name: Seed initial database data
+        run: |
+          DATABASE_URL="$(az keyvault secret show \
+            --vault-name "$KEY_VAULT_NAME" \
+            --name database-url \
+            --query value \
+            --output tsv)" npm run prisma:seed
       - name: Remove runner rule from the Postgres firewall
         if: always()
         run: |
