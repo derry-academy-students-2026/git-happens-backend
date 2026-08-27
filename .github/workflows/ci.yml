@@ -2,9 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [cicd-practice-anna]
 
 jobs:
   test:
@@ -17,3 +15,70 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+
+  terraform-plan:
+    name: Terraform Plan
+    needs: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: my-infrastructure
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate with Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Initialise Terraform
+        run: terraform init
+
+      - name: Validate Terraform configuration
+        run: terraform validate
+
+      - name: Plan infrastructure changes
+        run: terraform plan -out=tfplan
+
+      - name: Upload Terraform plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: my-infrastructure/tfplan
+          retention-days: 1
+
+  terraform-apply:
+    name: Terraform Apply
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: my-infrastructure
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate with Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Initialise Terraform
+        run: terraform init
+
+      - name: Download Terraform plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+          path: my-infrastructure
+
+      - name: Apply infrastructure changes
+        run: terraform apply -auto-approve tfplan

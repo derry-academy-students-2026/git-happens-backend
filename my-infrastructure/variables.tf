@@ -1,7 +1,7 @@
 variable "resource-group-name" {
   description = "The name of the resource group"
   type        = string
-  default     = "rg-git-happens-practice"
+  default     = "rg-git-happens-practice-anna"
 }
 
 variable "location" {
