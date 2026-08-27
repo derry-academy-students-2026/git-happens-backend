@@ -42,3 +42,8 @@ output "backend_internal_hostname" {
   description = "Internal hostname for frontend Container Apps in the same environment."
   value       = azurerm_container_app.backend.latest_revision_fqdn
 }
+
+output "postgres_server_fqdn" {
+  description = "Fully qualified domain name of the Postgres Flexible Server."
+  value       = azurerm_postgresql_flexible_server.application.fqdn
+}

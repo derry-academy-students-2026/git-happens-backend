@@ -128,3 +128,51 @@ jobs:
         run: terraform plan -input=false -no-color -out=tfplan
       - name: Apply Terraform changes
         run: terraform apply -input=false -auto-approve tfplan
+
+  database-migrate:
+    name: Apply Prisma migrations
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: terraform-deploy
+    runs-on: ubuntu-latest
+    env:
+      KEY_VAULT_NAME: githappensdev14454c
+      POSTGRES_RESOURCE_GROUP: git-happens-dev
+      POSTGRES_SERVER_NAME: git-happens-dev-pg
+      POSTGRES_FIREWALL_RULE_NAME: github-actions-runner
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+      - name: Allow this runner through the Postgres firewall
+        run: |
+          RUNNER_IP="$(curl -s https://api.ipify.org)"
+          echo "RUNNER_IP=$RUNNER_IP" >> "$GITHUB_ENV"
+          az postgres flexible-server firewall-rule create \
+            --resource-group "$POSTGRES_RESOURCE_GROUP" \
+            --name "$POSTGRES_SERVER_NAME" \
+            --rule-name "$POSTGRES_FIREWALL_RULE_NAME" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP"
+      - name: Apply pending Prisma migrations
+        run: |
+          DATABASE_URL="$(az keyvault secret show \
+            --vault-name "$KEY_VAULT_NAME" \
+            --name database-url \
+            --query value \
+            --output tsv)" npx prisma migrate deploy
+      - name: Remove runner rule from the Postgres firewall
+        if: always()
+        run: |
+          az postgres flexible-server firewall-rule delete \
+            --resource-group "$POSTGRES_RESOURCE_GROUP" \
+            --name "$POSTGRES_SERVER_NAME" \
+            --rule-name "$POSTGRES_FIREWALL_RULE_NAME" \
+            --yes

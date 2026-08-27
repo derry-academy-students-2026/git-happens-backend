@@ -75,4 +75,16 @@ variable "acr_login_server" {
   default     = "acraiacademy26.azurecr.io"
 }
 
+variable "postgres_admin_login" {
+  description = "Administrator login for the Postgres Flexible Server."
+  type        = string
+  default     = "githappensadmin"
+}
+
+variable "postgres_database_name" {
+  description = "Name of the application database."
+  type        = string
+  default     = "job-board"
+}
+
 
