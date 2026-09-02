@@ -36,12 +36,4 @@ jobRoleRouter.get("/:id", (req, res, next) =>
 	jobRolesController.getJobRoleById(req, res, next),
 );
 
-/**
- * Handles POST /:id/applications requests.
- * Submits an authenticated applicant's job application for the specified role.
- */
-jobRoleRouter.post("/:id/applications", (req, res, next) =>
-	jobRolesController.applyForRole(req, res, next),
-);
-
 export default jobRoleRouter;

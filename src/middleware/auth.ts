@@ -8,7 +8,7 @@ const AUTH_SCHEME = "Bearer ";
 const ADMIN_ROLES = new Set(["admin"]);
 const USER_ROLES = new Set(["user"]);
 const READ_ONLY_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
-const USER_APPLICATION_PATH = /^\/\d+\/applications\/?$/;
+const USER_APPLICATION_PATH = /^\/applications\/job-roles\/\d+\/?$/;
 
 interface AuthTokenPayload extends JwtPayload {
 	sub: string;

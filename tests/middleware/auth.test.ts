@@ -20,7 +20,7 @@ function createProtectedApp() {
 		res.status(200).json({ ok: true });
 	});
 
-	app.post("/:id/applications", (_req, res) => {
+	app.post("/applications/job-roles/:jobRoleId", (_req, res) => {
 		res.status(200).json({ ok: true });
 	});
 
@@ -94,7 +94,7 @@ describe("auth middleware", () => {
 
 	it("allows users to submit applications for specific roles", async () => {
 		const response = await request(createProtectedApp())
-			.post("/123/applications")
+			.post("/applications/job-roles/123")
 			.set("Authorization", `Bearer ${createToken("user")}`)
 			.send({});
 

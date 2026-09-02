@@ -66,6 +66,15 @@ model User {
   applications JobApplication[]
 }
 
+enum ApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  INTERVIEW
+  OFFERED
+  REJECTED
+  WITHDRAWN
+}
+
 model JobApplication {
   applicationId     Int      @id @default(autoincrement())
   jobRoleId         Int
@@ -76,7 +85,7 @@ model JobApplication {
   email             String   @default("")
   applicationText   String
   previousExperience String?
-  applicationStatus String   @default("in progress")
+  applicationStatus ApplicationStatus @default(SUBMITTED)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

@@ -123,35 +123,4 @@ describe("jobRoleRouter", () => {
 		expect(response.body).toEqual({ message: "Job role not found" });
 	});
 
-	it("POST /job-roles/:id/applications creates an application", async () => {
-		applyForRole.mockResolvedValue({
-			applicationId: 10,
-			jobRoleId: 1,
-			userId: 7,
-			applicationStatus: "in progress",
-		});
-
-		const response = await request(createApp())
-			.post("/job-roles/1/applications")
-			.send({
-				fullName: "Jane Applicant",
-				countryCode: "+44",
-				phoneNumber: "7123 456 789",
-				email: "jane.applicant@example.com",
-				applicationText: "I am interested in this role.",
-				previousExperience: "5 years experience",
-			});
-
-		expect(response.status).toBe(201);
-		expect(applyForRole).toHaveBeenCalledWith(
-			1,
-			7,
-			"Jane Applicant",
-			"+44",
-			"7123 456 789",
-			"jane.applicant@example.com",
-			"I am interested in this role.",
-			"5 years experience",
-		);
-	});
 });

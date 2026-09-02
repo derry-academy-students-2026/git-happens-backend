@@ -1,3 +1,5 @@
+import type { ApplicationStatus } from "../generated/prisma/client.js";
+
 export class ApplyForRoleRequestModel {
 	constructor(
 		public readonly fullName: string,
@@ -20,7 +22,7 @@ export class JobApplicationResponseModel {
 		public readonly email: string,
 		public readonly applicationText: string,
 		public readonly previousExperience: string | null,
-		public readonly applicationStatus: string,
+		public readonly applicationStatus: ApplicationStatus,
 		public readonly createdAt: Date,
 	) {}
 }
