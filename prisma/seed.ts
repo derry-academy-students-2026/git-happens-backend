@@ -89,7 +89,8 @@ async function main() {
 	const closingDate2 = new Date("2024-10-15");
 	const closingDate3 = new Date("2024-11-30");
 
-	await prisma.jobRole.createMany({
+	if ((await prisma.jobRole.count()) === 0) {
+		await prisma.jobRole.createMany({
 		data: [
 			{
 				roleName: "Executive Assistant",
@@ -286,7 +287,8 @@ async function main() {
 			},
 		],
 		skipDuplicates: true,
-	});
+		});
+	}
 
 	// Seed an example login user with an argon2 password hash.
 	const passwordHash = await argon2.hash("password123!");
