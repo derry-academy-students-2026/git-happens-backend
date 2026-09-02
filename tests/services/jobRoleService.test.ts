@@ -5,8 +5,12 @@ vi.mock("../../src/prismaClient.js", () => ({
 		jobRole: {
 			findMany: vi.fn(),
 			findUnique: vi.fn(),
+			create: vi.fn(),
 			count: vi.fn(),
 		},
+		capability: { findUnique: vi.fn() },
+		band: { findUnique: vi.fn() },
+		status: { findUnique: vi.fn() },
 	},
 }));
 
@@ -20,7 +24,13 @@ const findMany = prisma.jobRole.findMany as unknown as ReturnType<typeof vi.fn>;
 const findUnique = prisma.jobRole.findUnique as unknown as ReturnType<
 	typeof vi.fn
 >;
+const create = prisma.jobRole.create as unknown as ReturnType<typeof vi.fn>;
 const count = prisma.jobRole.count as unknown as ReturnType<typeof vi.fn>;
+const findCapability = prisma.capability
+	.findUnique as unknown as ReturnType<typeof vi.fn>;
+const findBand = prisma.band.findUnique as unknown as ReturnType<typeof vi.fn>;
+const findStatus = prisma.status
+	.findUnique as unknown as ReturnType<typeof vi.fn>;
 
 const capability = new CapabilityModel(1, "Software Engineering");
 const band = new BandModel(2, "Band 3 - Senior");
@@ -158,5 +168,65 @@ describe("JobRoleService.getJobRoleById", () => {
 		const service = new JobRoleService();
 
 		await expect(service.getJobRoleById(1)).rejects.toThrow("db error");
+	});
+});
+
+describe("JobRoleService.createJobRole", () => {
+	beforeEach(() => {
+		findCapability.mockReset();
+		findBand.mockReset();
+		findStatus.mockReset();
+		create.mockReset();
+	});
+
+	it("creates a role using existing references and Open status", async () => {
+		findCapability.mockResolvedValue({ capabilityId: 1 });
+		findBand.mockResolvedValue({ bandId: 2 });
+		findStatus.mockResolvedValue({ statusId: 1 });
+		create.mockResolvedValue(jobRoleRow);
+
+		const service = new JobRoleService();
+		const result = await service.createJobRole({
+			roleName: "Software Engineer",
+			location: "Remote",
+			capabilityId: 1,
+			bandId: 2,
+			closingDate,
+			description: "Build software.",
+			responsibilities: "Write code; review code.",
+			numberOfOpenPositions: 3,
+		});
+
+		expect(findStatus).toHaveBeenCalledWith({ where: { statusName: "Open" } });
+		expect(create).toHaveBeenCalledWith({
+			data: expect.objectContaining({
+				capabilityId: 1,
+				bandId: 2,
+				statusId: 1,
+				sharepointUrl: "https://sharepoint.example.com/job-roles/pending",
+			}),
+			include: { capability: true, band: true, status: true },
+		});
+		expect(result.roleName).toBe("Software Engineer");
+	});
+
+	it("rejects an unknown capability", async () => {
+		findCapability.mockResolvedValue(null);
+		findBand.mockResolvedValue({ bandId: 2 });
+		findStatus.mockResolvedValue({ statusId: 1 });
+
+		await expect(
+			new JobRoleService().createJobRole({
+				roleName: "Role",
+				location: "Remote",
+				capabilityId: 99,
+				bandId: 2,
+				closingDate,
+				description: "Description",
+				responsibilities: "Responsibilities",
+				numberOfOpenPositions: 1,
+			}),
+		).rejects.toThrow("Capability not found");
+		expect(create).not.toHaveBeenCalled();
 	});
 });

@@ -61,3 +61,6 @@ export class JobRoleDetailedResponseModel {
 		public readonly numberOfOpenPositions: number,
 	) {} // validation logic here
 }
+
+// Derived from the Zod schema so the request contract has a single definition.
+export type { CreateJobRoleRequestDto as CreateJobRoleRequestModel } from "../validation/jobRoleSchemas.js";

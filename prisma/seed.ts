@@ -10,6 +10,22 @@ import type {
 // PrismaClient works fine with v6
 const prisma = new PrismaClient();
 
+async function createUser(
+	userEmail: string,
+	passwordHash: string,
+	userRole: string,
+) {
+	await prisma.user.upsert({
+		where: { email: userEmail },
+		update: { passwordHash },
+		create: {
+			email: userEmail,
+			passwordHash,
+			role: { connect: { roleName: userRole } },
+		},
+	});
+}
+
 async function main() {
 	// Create capabilities first
 	await prisma.capability.createMany({
@@ -73,7 +89,8 @@ async function main() {
 	const closingDate2 = new Date("2024-10-15");
 	const closingDate3 = new Date("2024-11-30");
 
-	await prisma.jobRole.createMany({
+	if ((await prisma.jobRole.count()) === 0) {
+		await prisma.jobRole.createMany({
 		data: [
 			{
 				roleName: "Executive Assistant",
@@ -270,20 +287,19 @@ async function main() {
 			},
 		],
 		skipDuplicates: true,
-	});
+		});
+	}
 
 	// Seed an example login user with an argon2 password hash.
 	const passwordHash = await argon2.hash("password123!");
+	//	const adminEmail = "admin1@example.com";
+	//	const userEmail = "test1@example.com";
 
-	await prisma.user.upsert({
-		where: { email: "test1@example.com" },
-		update: { passwordHash },
-		create: {
-			email: "test1@example.com",
-			passwordHash,
-			role: { connect: { roleName: "user" } },
-		},
-	});
+	//normal user creation
+	await createUser("test1@example.com", passwordHash, "user");
+
+	//admin user creation
+	await createUser("admin1@example.com", passwordHash, "admin");
 }
 
 main()

@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
+import { JobRoleValidationError } from "../errors/customErrors.js";
 import logger from "../lib/logger.js";
-import { jobRoleService } from "../services/jobRoleService.js";
+import type { JobRoleService } from "../services/jobRoleService.js";
+import type { CreateJobRoleRequestDto } from "../validation/jobRoleSchemas.js";
 
 /**
  * @param service - The job role service instance used to fetch job role data.
@@ -8,7 +10,7 @@ import { jobRoleService } from "../services/jobRoleService.js";
  * It interacts with the jobRoleService to fetch job role data and sends appropriate responses.
  */
 export class JobRolesController {
-	constructor(private service = jobRoleService) {}
+	constructor(private service: JobRoleService) {}
 
 	/**
 	 * Fetches a page of job roles from the service and sends them in the response.
@@ -83,6 +85,31 @@ export class JobRolesController {
 				`Failed to fetch job role by ID: ${err.stack ?? err.message}`,
 			);
 			next(err);
+		}
+	}
+
+	/**
+	 * Creates a new job role from a body already validated by `validateBody`.
+	 * @param req - The Express request object, whose body holds the new job role.
+	 * @param res - The Express response object.
+	 * @param next - The next middleware function in the Express request-response cycle.
+	 */
+	async createJobRole(
+		req: Request,
+		res: Response,
+		next: NextFunction,
+	): Promise<void> {
+		try {
+			const jobRole = await this.service.createJobRole(
+				req.body as CreateJobRoleRequestDto,
+			);
+			res.status(201).json(jobRole);
+		} catch (error) {
+			if (error instanceof JobRoleValidationError) {
+				res.status(error.statusCode).json({ message: error.message });
+				return;
+			}
+			next(error instanceof Error ? error : new Error(String(error)));
 		}
 	}
 }

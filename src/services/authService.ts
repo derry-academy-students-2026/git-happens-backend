@@ -1,5 +1,5 @@
-import argon2 from "argon2";
 import { randomUUID } from "node:crypto";
+import argon2 from "argon2";
 import type { SignOptions } from "jsonwebtoken";
 import jwt from "jsonwebtoken";
 import logger from "../lib/logger.js";
@@ -74,6 +74,9 @@ export class AuthService {
 				"code" in error &&
 				error.code === "P2002"
 			) {
+				logger.warn("Registration rejected: email already registered", {
+					email: maskEmail(normalizedEmail),
+				});
 				throw new AuthConflictError(
 					"An account with this email already exists",
 				);
@@ -99,9 +102,7 @@ export class AuthService {
 		password: string,
 	): Promise<LoginUserResponseModel> {
 		const normalizedEmail = email.trim().toLowerCase();
-		logger.info("Attempting user login", {
-			email: maskEmail(normalizedEmail),
-		});
+		logger.info("Login attempt", { email: maskEmail(normalizedEmail) });
 
 		const user = await prisma.user.findUnique({
 			where: { email: normalizedEmail },
@@ -111,12 +112,13 @@ export class AuthService {
 		// One error for both unknown email and wrong password, so the response
 		// cannot be used to discover which accounts exist.
 		if (!user || !(await this.verifyPassword(user.passwordHash, password))) {
-			logger.warn("Login denied due to invalid credentials", {
+			logger.warn("Login failed: invalid email or password", {
 				email: maskEmail(normalizedEmail),
 			});
 			throw new AuthUnauthorizedError("Invalid email or password");
 		}
 
+		// Claim shape must stay in sync with hasRequiredClaims in middleware/auth.ts.
 		const token = jwt.sign(
 			{
 				sub: String(user.id),
