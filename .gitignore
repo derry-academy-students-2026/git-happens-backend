@@ -40,6 +40,7 @@ Thumbs.db
 /src/generated/prisma
 
 #Other
+/code_reviews
 .agent/skills/
 .claude/skills/
 .windsurf/skills/
@@ -47,3 +48,16 @@ skills-lock.json
 
 .github/copilot-instructions.md
 code_reviews/
+
+# exported corporate CA certs are local-only
+/certs/
+
+# Terraform generated state, working directory, and local overrides
+infastructure/.terraform/
+infastructure/*.tfstate
+infastructure/*.tfstate.*
+infastructure/crash.log
+infastructure/*.tfvars
+infastructure/*.tfvars.json
+infastructure/*_override.tf
+infastructure/*_override.tf.json
