@@ -10,6 +10,7 @@ vi.mock("../../src/prismaClient.js", () => ({
 import {
 	ApplicationConflictError,
 	ApplicationNotFoundError,
+	ApplicationValidationError,
 } from "../../src/errors/applicationErrors.js";
 import { ApplyForRoleRequestModel } from "../../src/models/jobApplicationModels.js";
 import prisma from "../../src/prismaClient.js";
@@ -77,5 +78,112 @@ describe("ApplicationService.submitJobApplication", () => {
 		await expect(
 			new ApplicationService().submitJobApplication(1, 7, request),
 		).rejects.toBeInstanceOf(ApplicationConflictError);
+	});
+
+	it("rejects an application when no positions remain", async () => {
+		findUnique.mockResolvedValue({
+			jobRoleId: 1,
+			numberOfOpenPositions: 0,
+			status: { statusName: "Open" },
+		});
+
+		await expect(
+			new ApplicationService().submitJobApplication(1, 7, request),
+		).rejects.toBeInstanceOf(ApplicationConflictError);
+	});
+
+	it("rejects invalid job role and user IDs before querying Prisma", async () => {
+		const service = new ApplicationService();
+
+		await expect(
+			service.submitJobApplication(0, 7, request),
+		).rejects.toBeInstanceOf(ApplicationValidationError);
+		await expect(
+			service.submitJobApplication(1, 0, request),
+		).rejects.toBeInstanceOf(ApplicationValidationError);
+		expect(findUnique).not.toHaveBeenCalled();
+	});
+
+	it("converts a duplicate application database error into a conflict", async () => {
+		findUnique.mockResolvedValue({
+			jobRoleId: 1,
+			numberOfOpenPositions: 1,
+			status: { statusName: "Open" },
+		});
+		create.mockRejectedValue({ code: "P2002" });
+
+		await expect(
+			new ApplicationService().submitJobApplication(1, 7, request),
+		).rejects.toBeInstanceOf(ApplicationConflictError);
+	});
+
+	it("rethrows unexpected persistence errors", async () => {
+		findUnique.mockResolvedValue({
+			jobRoleId: 1,
+			numberOfOpenPositions: 1,
+			status: { statusName: "Open" },
+		});
+		const unexpectedError = new Error("Database unavailable");
+		create.mockRejectedValue(unexpectedError);
+
+		await expect(
+			new ApplicationService().submitJobApplication(1, 7, request),
+		).rejects.toBe(unexpectedError);
+	});
+
+	it("stores blank previous experience as null and retains meaningful text", async () => {
+		findUnique.mockResolvedValue({
+			jobRoleId: 1,
+			numberOfOpenPositions: 1,
+			status: { statusName: "Open" },
+		});
+		create.mockResolvedValue({
+			applicationId: 10,
+			jobRoleId: 1,
+			userId: 7,
+			fullName: request.fullName,
+			countryCode: request.countryCode,
+			phoneNumber: request.phoneNumber,
+			email: request.email,
+			applicationText: request.applicationText,
+			previousExperience: null,
+			applicationStatus: "SUBMITTED",
+			createdAt: new Date(),
+		});
+		const service = new ApplicationService();
+
+		await service.submitJobApplication(
+			1,
+			7,
+			new ApplyForRoleRequestModel(
+				request.fullName,
+				request.countryCode,
+				request.phoneNumber,
+				request.email,
+				request.applicationText,
+				"   ",
+			),
+		);
+		expect(create).toHaveBeenLastCalledWith({
+			data: expect.objectContaining({ previousExperience: null }),
+		});
+
+		await service.submitJobApplication(
+			1,
+			7,
+			new ApplyForRoleRequestModel(
+				request.fullName,
+				request.countryCode,
+				request.phoneNumber,
+				request.email,
+				request.applicationText,
+				"Five years of relevant experience",
+			),
+		);
+		expect(create).toHaveBeenLastCalledWith({
+			data: expect.objectContaining({
+				previousExperience: "Five years of relevant experience",
+			}),
+		});
 	});
 });

@@ -1,7 +1,11 @@
 import type { NextFunction, Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
 import { ApplicationController } from "../../src/controllers/applicationController.js";
-import { ApplicationNotFoundError } from "../../src/errors/applicationErrors.js";
+import {
+	ApplicationConflictError,
+	ApplicationNotFoundError,
+	ApplicationValidationError,
+} from "../../src/errors/applicationErrors.js";
 import type { ApplicationService } from "../../src/services/applicationService.js";
 
 function createResponse(): Response {
@@ -61,5 +65,41 @@ describe("ApplicationController.submitJobApplication", () => {
 		expect(response.status).toHaveBeenCalledWith(404);
 		expect(response.json).toHaveBeenCalledWith({ message: "Job role not found" });
 		expect(next).not.toHaveBeenCalled();
+	});
+
+	it("returns 400 and 409 for validation and conflict errors", async () => {
+		const submitJobApplication = vi
+			.fn()
+			.mockRejectedValueOnce(
+				new ApplicationValidationError("Invalid authenticated user"),
+			)
+			.mockRejectedValueOnce(
+				new ApplicationConflictError("You have already applied for this role"),
+			);
+		const controller = new ApplicationController({
+			submitJobApplication,
+		} as unknown as ApplicationService);
+		const response = createResponse();
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.submitJobApplication({ body: {} } as Request, response, next);
+		await controller.submitJobApplication({ body: {} } as Request, response, next);
+
+		expect(response.status).toHaveBeenNthCalledWith(1, 400);
+		expect(response.status).toHaveBeenNthCalledWith(2, 409);
+		expect(next).not.toHaveBeenCalled();
+	});
+
+	it("forwards unexpected service errors to Express", async () => {
+		const unexpectedError = new Error("Database unavailable");
+		const controller = new ApplicationController({
+			submitJobApplication: vi.fn().mockRejectedValue(unexpectedError),
+		} as unknown as ApplicationService);
+		const response = createResponse();
+		const next = vi.fn() as unknown as NextFunction;
+
+		await controller.submitJobApplication({ body: {} } as Request, response, next);
+
+		expect(next).toHaveBeenCalledWith(unexpectedError);
 	});
 });
