@@ -26,4 +26,12 @@ applicationRouter.post(
 	(req, res) => applicationController.submitJobApplication(req, res),
 );
 
+applicationRouter.post(
+	"/:jobRoleId/applications",
+	validateParams(ApplicationJobRoleIdParamSchema),
+	validateAuthenticatedUserId(),
+	validateBody(ApplyForRoleSchema, "Invalid application details"),
+	(req, res) => applicationController.submitJobApplication(req, res),
+);
+
 export default applicationRouter;

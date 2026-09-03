@@ -28,13 +28,25 @@ app.use(
 );
 app.use("/bands", authenticateToken, authorizeRecruitmentAccess, bandRouter);
 app.use(
+	"/applications",
+	authenticateToken,
+	authorizeRecruitmentAccess,
+	applicationRouter,
+);
+app.use(
+	"/job-roles",
+	authenticateToken,
+	authorizeRecruitmentAccess,
+	applicationRouter,
+);
+app.use(
 	"/job-roles",
 	authenticateToken,
 	authorizeRecruitmentAccess,
 	jobRoleRouter,
 );
 app.use(
-	"/applications",
+	"/job-roles",
 	authenticateToken,
 	authorizeRecruitmentAccess,
 	applicationRouter,

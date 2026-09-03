@@ -28,12 +28,17 @@ export class ApplicationService {
 		logger.info("Attempting job application submission", { jobRoleId, userId });
 
 		if (!Number.isInteger(jobRoleId) || jobRoleId <= 0) {
+			logger.warn("Rejected job application with invalid job role ID", {
+				jobRoleId,
+				userId,
+			});
 			throw new ApplicationValidationError(
 				"Job role ID must be a positive integer",
 			);
 		}
 
 		if (!Number.isInteger(userId) || userId <= 0) {
+			logger.warn("Rejected job application with invalid user ID", { jobRoleId });
 			throw new ApplicationValidationError("Invalid authenticated user");
 		}
 
@@ -43,11 +48,21 @@ export class ApplicationService {
 		});
 
 		if (!jobRole) {
+			logger.warn("Rejected job application for missing job role", {
+				jobRoleId,
+				userId,
+			});
 			throw new ApplicationNotFoundError("Job role not found");
 		}
 
 		const isOpen = jobRole.status.statusName.toLowerCase() === "open";
 		if (!isOpen || jobRole.numberOfOpenPositions <= 0) {
+			logger.warn("Rejected job application for unavailable job role", {
+				jobRoleId,
+				userId,
+				status: jobRole.status.statusName,
+				openPositions: jobRole.numberOfOpenPositions,
+			});
 			throw new ApplicationConflictError(
 				"This role is not accepting applications",
 			);
@@ -100,6 +115,7 @@ export class ApplicationService {
 				"code" in error &&
 				error.code === "P2002"
 			) {
+				logger.warn("Rejected duplicate job application", { jobRoleId, userId });
 				throw new ApplicationConflictError(
 					"You have already applied for this role",
 				);

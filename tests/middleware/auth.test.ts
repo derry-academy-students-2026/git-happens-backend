@@ -24,6 +24,10 @@ function createProtectedApp() {
 		res.status(200).json({ ok: true });
 	});
 
+	app.post("/job-roles/:jobRoleId/applications", (_req, res) => {
+		res.status(200).json({ ok: true });
+	});
+
 	return app;
 }
 
@@ -95,6 +99,32 @@ describe("auth middleware", () => {
 	it("allows users to submit applications for specific roles", async () => {
 		const response = await request(createProtectedApp())
 			.post("/applications/job-roles/123")
+			.set("Authorization", `Bearer ${createToken("user")}`)
+			.send({});
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual({ ok: true });
+	});
+
+	it("allows users to submit applications through a mounted job role router", async () => {
+		const app = express();
+		app.use("/job-roles", authenticateToken, authorizeRecruitmentAccess);
+		app.post("/job-roles/:jobRoleId/applications", (_req, res) => {
+			res.status(200).json({ ok: true });
+		});
+
+		const response = await request(app)
+			.post("/job-roles/123/applications")
+			.set("Authorization", `Bearer ${createToken("user")}`)
+			.send({});
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual({ ok: true });
+	});
+
+	it("allows users to submit applications through the job role path", async () => {
+		const response = await request(createProtectedApp())
+			.post("/job-roles/123/applications")
 			.set("Authorization", `Bearer ${createToken("user")}`)
 			.send({});
 

@@ -8,7 +8,8 @@ const AUTH_SCHEME = "Bearer ";
 const ADMIN_ROLES = new Set(["admin"]);
 const USER_ROLES = new Set(["user"]);
 const READ_ONLY_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
-const USER_APPLICATION_PATH = /^\/applications\/job-roles\/\d+\/?$/;
+const USER_APPLICATION_PATH =
+	/^(?:\/applications\/job-roles\/\d+|\/job-roles\/\d+\/applications)\/?$/;
 
 interface AuthTokenPayload extends JwtPayload {
 	sub: string;
@@ -98,8 +99,10 @@ function hasRequiredClaims(
  * Checks whether the request is the applicant job-application submission path.
  */
 function isUserApplicationSubmission(req: Request): boolean {
+	const requestPath = `${req.baseUrl}${req.path}`;
+
 	return (
-		req.method.toUpperCase() === "POST" && USER_APPLICATION_PATH.test(req.path)
+		req.method.toUpperCase() === "POST" && USER_APPLICATION_PATH.test(requestPath)
 	);
 }
 
