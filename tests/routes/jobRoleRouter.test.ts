@@ -82,13 +82,13 @@ describe("jobRoleRouter", () => {
 		]);
 	});
 
-	it("forwards service errors to the error handler", async () => {
+	it("returns a generic 500 for service errors", async () => {
 		getJobRoles.mockRejectedValue(new Error("boom"));
 
 		const response = await request(createApp()).get("/job-roles");
 
 		expect(response.status).toBe(500);
-		expect(response.body).toEqual({ message: "boom" });
+		expect(response.body).toEqual({ message: "Internal server error" });
 	});
 
 	it("GET /job-roles/:id returns the job role from the service", async () => {
