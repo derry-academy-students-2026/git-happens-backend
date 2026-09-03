@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 import {
 	ApplicationConflictError,
 	ApplicationNotFoundError,
@@ -16,12 +16,10 @@ export class ApplicationController {
 	 * Submits a validated application for the selected job role.
 	 * @param req Request containing a validated application payload.
 	 * @param res Response containing validated path and authentication values.
-	 * @param next Express error handler.
 	 */
 	async submitJobApplication(
 		req: Request,
 		res: Response,
-		next: NextFunction,
 	): Promise<void> {
 		try {
 			const { jobRoleId } = res.locals.params as { jobRoleId: number };
@@ -59,7 +57,7 @@ export class ApplicationController {
 
 			const err = error instanceof Error ? error : new Error(String(error));
 			logger.error(`Failed to submit job application: ${err.stack ?? err.message}`);
-			next(err);
+			res.status(500).json({ message: "Internal server error" });
 		}
 	}
 }

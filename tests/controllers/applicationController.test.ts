@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
 import { ApplicationController } from "../../src/controllers/applicationController.js";
 import {
@@ -23,7 +23,6 @@ describe("ApplicationController.submitJobApplication", () => {
 			submitJobApplication,
 		} as unknown as ApplicationService);
 		const response = createResponse();
-		const next = vi.fn() as unknown as NextFunction;
 
 		await controller.submitJobApplication(
 			{
@@ -36,7 +35,6 @@ describe("ApplicationController.submitJobApplication", () => {
 				},
 			} as Request,
 			response,
-			next,
 		);
 
 		expect(submitJobApplication).toHaveBeenCalledWith(
@@ -54,17 +52,14 @@ describe("ApplicationController.submitJobApplication", () => {
 				.mockRejectedValue(new ApplicationNotFoundError("Job role not found")),
 		} as unknown as ApplicationService);
 		const response = createResponse();
-		const next = vi.fn() as unknown as NextFunction;
 
 		await controller.submitJobApplication(
 			{ body: {} } as Request,
 			response,
-			next,
 		);
 
 		expect(response.status).toHaveBeenCalledWith(404);
 		expect(response.json).toHaveBeenCalledWith({ message: "Job role not found" });
-		expect(next).not.toHaveBeenCalled();
 	});
 
 	it("returns 400 and 409 for validation and conflict errors", async () => {
@@ -80,26 +75,24 @@ describe("ApplicationController.submitJobApplication", () => {
 			submitJobApplication,
 		} as unknown as ApplicationService);
 		const response = createResponse();
-		const next = vi.fn() as unknown as NextFunction;
 
-		await controller.submitJobApplication({ body: {} } as Request, response, next);
-		await controller.submitJobApplication({ body: {} } as Request, response, next);
+		await controller.submitJobApplication({ body: {} } as Request, response);
+		await controller.submitJobApplication({ body: {} } as Request, response);
 
 		expect(response.status).toHaveBeenNthCalledWith(1, 400);
 		expect(response.status).toHaveBeenNthCalledWith(2, 409);
-		expect(next).not.toHaveBeenCalled();
 	});
 
-	it("forwards unexpected service errors to Express", async () => {
+	it("returns 500 for unexpected service errors", async () => {
 		const unexpectedError = new Error("Database unavailable");
 		const controller = new ApplicationController({
 			submitJobApplication: vi.fn().mockRejectedValue(unexpectedError),
 		} as unknown as ApplicationService);
 		const response = createResponse();
-		const next = vi.fn() as unknown as NextFunction;
 
-		await controller.submitJobApplication({ body: {} } as Request, response, next);
+		await controller.submitJobApplication({ body: {} } as Request, response);
 
-		expect(next).toHaveBeenCalledWith(unexpectedError);
+		expect(response.status).toHaveBeenCalledWith(500);
+		expect(response.json).toHaveBeenCalledWith({ message: "Internal server error" });
 	});
 });

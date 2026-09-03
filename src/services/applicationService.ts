@@ -54,6 +54,8 @@ export class ApplicationService {
 		}
 
 		try {
+			// This create will reject if the user has already applied for this
+			// role due to the unique constraint on (jobRoleId, userId).
 			const application = await prisma.jobApplication.create({
 				data: {
 					jobRoleId,
