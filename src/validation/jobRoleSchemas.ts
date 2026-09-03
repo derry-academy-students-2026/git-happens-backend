@@ -52,6 +52,8 @@ export const CreateJobRoleSchema = z.object({
 	numberOfOpenPositions: positiveId("Number of open positions"),
 });
 
+export const UpdateJobRoleSchema = CreateJobRoleSchema;
+
 export const JobRoleIdParamSchema = z.object({
 	id: z.coerce
 		.number({ error: "ID is required" })
@@ -60,4 +62,5 @@ export const JobRoleIdParamSchema = z.object({
 });
 
 export type CreateJobRoleRequestDto = z.infer<typeof CreateJobRoleSchema>;
+export type UpdateJobRoleRequestDto = z.infer<typeof UpdateJobRoleSchema>;
 export type JobRoleIdParamDto = z.infer<typeof JobRoleIdParamSchema>;

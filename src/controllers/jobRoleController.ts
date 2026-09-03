@@ -2,7 +2,10 @@ import type { NextFunction, Request, Response } from "express";
 import { JobRoleValidationError } from "../errors/customErrors.js";
 import logger from "../lib/logger.js";
 import type { JobRoleService } from "../services/jobRoleService.js";
-import type { CreateJobRoleRequestDto } from "../validation/jobRoleSchemas.js";
+import type {
+	CreateJobRoleRequestDto,
+	UpdateJobRoleRequestDto,
+} from "../validation/jobRoleSchemas.js";
 
 /**
  * @param service - The job role service instance used to fetch job role data.
@@ -93,6 +96,34 @@ export class JobRolesController {
 				req.body as CreateJobRoleRequestDto,
 			);
 			res.status(201).json(jobRole);
+		} catch (error) {
+			if (error instanceof JobRoleValidationError) {
+				res.status(error.statusCode).json({ message: error.message });
+				return;
+			}
+			next(error instanceof Error ? error : new Error(String(error)));
+		}
+	}
+
+	/** Updates an existing job role from a body already validated by `validateBody`. */
+	async updateJobRole(
+		req: Request,
+		res: Response,
+		next: NextFunction,
+	): Promise<void> {
+		try {
+			const jobRoleId = Number(req.params.id);
+
+			if (!Number.isInteger(jobRoleId) || jobRoleId <= 0) {
+				res.status(400).json({ error: "ID must be a positive integer" });
+				return;
+			}
+
+			const jobRole = await this.service.updateJobRole(
+				jobRoleId,
+				req.body as UpdateJobRoleRequestDto,
+			);
+			res.json(jobRole);
 		} catch (error) {
 			if (error instanceof JobRoleValidationError) {
 				res.status(error.statusCode).json({ message: error.message });

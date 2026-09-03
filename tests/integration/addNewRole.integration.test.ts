@@ -97,6 +97,22 @@ vi.mock("../../src/prismaClient.js", () => {
 					db.jobRoles.push(row);
 					return withRelations(row);
 				}),
+				update: vi.fn(
+					async ({
+						where,
+						data,
+					}: {
+						where: { jobRoleId: number };
+						data: Record<string, unknown>;
+					}) => {
+						const row = db.jobRoles.find(
+							(jobRole) => jobRole.jobRoleId === where.jobRoleId,
+						);
+						if (!row) throw new Error("Job role not found");
+						Object.assign(row, data);
+						return withRelations(row);
+					},
+				),
 				findUnique: vi.fn(
 					async ({ where }: { where: { jobRoleId: number } }) => {
 						const row = db.jobRoles.find(
@@ -208,6 +224,59 @@ describe("POST /job-roles (add new role integration)", () => {
 
 		expect(getResponse.status).toBe(200);
 		expect(getResponse.body).toEqual(createResponse.body);
+	});
+
+	it("allows an admin to edit an existing job role", async () => {
+		const createResponse = await request(app)
+			.post("/job-roles")
+			.set("Authorization", `Bearer ${createToken("admin")}`)
+			.send(validRoleRequest());
+
+		const updateResponse = await request(app)
+			.put(`/job-roles/${createResponse.body.jobRoleId}`)
+			.set("Authorization", `Bearer ${createToken("admin")}`)
+			.send(
+				validRoleRequest({
+					roleName: "Principal Software Engineer",
+					location: "London",
+					numberOfOpenPositions: 2,
+				}),
+			);
+
+		expect(updateResponse.status).toBe(200);
+		expect(updateResponse.body).toMatchObject({
+			jobRoleId: 1,
+			roleName: "Principal Software Engineer",
+			location: "London",
+			numberOfOpenPositions: 2,
+			status: { statusName: "Open" },
+			sharepointUrl: "https://sharepoint.example.com/job-roles/pending",
+		});
+	});
+
+	it("returns 404 when editing a job role that does not exist", async () => {
+		const response = await request(app)
+			.put("/job-roles/999")
+			.set("Authorization", `Bearer ${createToken("admin")}`)
+			.send(validRoleRequest());
+
+		expect(response.status).toBe(404);
+		expect(response.body).toEqual({ message: "Job role not found" });
+	});
+
+	it("rejects non-admin edits without changing the job role", async () => {
+		await request(app)
+			.post("/job-roles")
+			.set("Authorization", `Bearer ${createToken("admin")}`)
+			.send(validRoleRequest());
+
+		const response = await request(app)
+			.put("/job-roles/1")
+			.set("Authorization", `Bearer ${createToken("user")}`)
+			.send(validRoleRequest({ roleName: "Should Not Change" }));
+
+		expect(response.status).toBe(403);
+		expect(db.jobRoles[0].roleName).toBe("Software Engineer");
 	});
 
 	it("includes the new job role in GET /job-roles", async () => {

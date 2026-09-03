@@ -2,7 +2,10 @@ import { Router } from "express";
 import { JobRolesController } from "../controllers/jobRoleController.js";
 import { validateBody } from "../middleware/validateRequest.js";
 import { JobRoleService } from "../services/jobRoleService.js";
-import { CreateJobRoleSchema } from "../validation/jobRoleSchemas.js";
+import {
+	CreateJobRoleSchema,
+	UpdateJobRoleSchema,
+} from "../validation/jobRoleSchemas.js";
 
 const jobRoleRouter = Router();
 const jobRoleService = new JobRoleService();
@@ -12,6 +15,12 @@ jobRoleRouter.post(
 	"/",
 	validateBody(CreateJobRoleSchema, "Invalid job role details"),
 	(req, res, next) => jobRolesController.createJobRole(req, res, next),
+);
+
+jobRoleRouter.put(
+	"/:id",
+	validateBody(UpdateJobRoleSchema, "Invalid job role details"),
+	(req, res, next) => jobRolesController.updateJobRole(req, res, next),
 );
 
 /**
