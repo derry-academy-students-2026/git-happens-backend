@@ -1,5 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
-import type { ZodType } from "zod";
+import { z, type ZodType } from "zod";
 import logger from "../lib/logger.js";
 import { toFieldErrors } from "../validation/fieldErrors.js";
 
@@ -66,6 +66,30 @@ export function validateParams(
 		}
 
 		res.locals.params = result.data;
+		next();
+	};
+}
+
+/**
+ * Validates the user ID supplied by authentication middleware and exposes its
+ * numeric form to downstream handlers.
+ * @returns Express middleware that validates the authenticated user ID.
+ */
+export function validateAuthenticatedUserId(): RequestHandler {
+	return (_req: Request, res: Response, next: NextFunction): void => {
+		const result = z.coerce
+			.number()
+			.int()
+			.positive()
+			.safeParse(res.locals.auth?.sub);
+
+		if (!result.success) {
+			logger.warn("Rejected request with invalid authenticated user ID");
+			res.status(401).json({ message: "Authentication required" });
+			return;
+		}
+
+		res.locals.authUserId = result.data;
 		next();
 	};
 }

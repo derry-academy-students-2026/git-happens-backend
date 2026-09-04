@@ -6,8 +6,8 @@ const capabilityRouter = Router();
 const capabilityService = new CapabilityService();
 const capabilityController = new CapabilityController(capabilityService);
 
-capabilityRouter.get("/", (req, res, next) =>
-	capabilityController.getCapabilities(req, res, next),
+capabilityRouter.get("/", (req, res) =>
+	capabilityController.getCapabilities(req, res),
 );
 
 export default capabilityRouter;

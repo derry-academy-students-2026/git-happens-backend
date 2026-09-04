@@ -7,6 +7,10 @@ vi.mock("../../src/prismaClient.js", () => ({
 			findUnique: vi.fn(),
 			create: vi.fn(),
 			update: vi.fn(),
+			count: vi.fn(),
+		},
+		jobApplication: {
+			create: vi.fn(),
 		},
 		capability: { findUnique: vi.fn() },
 		band: { findUnique: vi.fn() },
@@ -26,6 +30,7 @@ const findUnique = prisma.jobRole.findUnique as unknown as ReturnType<
 >;
 const create = prisma.jobRole.create as unknown as ReturnType<typeof vi.fn>;
 const update = prisma.jobRole.update as unknown as ReturnType<typeof vi.fn>;
+const count = prisma.jobRole.count as unknown as ReturnType<typeof vi.fn>;
 const findCapability = prisma.capability.findUnique as unknown as ReturnType<
 	typeof vi.fn
 >;
@@ -56,45 +61,73 @@ const jobRoleRow = {
 describe("JobRoleService.getJobRoles", () => {
 	beforeEach(() => {
 		findMany.mockReset();
+		count.mockReset();
 	});
 
-	it("queries job roles with their capability and band, mapped to response models", async () => {
+	it("queries a page of job roles with their capability and band, mapped to response models", async () => {
 		findMany.mockResolvedValue([jobRoleRow]);
+		count.mockResolvedValue(1);
 
 		const service = new JobRoleService();
-		const result = await service.getJobRoles();
+		const result = await service.getJobRoles(1);
 
 		expect(findMany).toHaveBeenCalledWith({
 			include: { capability: true, band: true, status: true },
+			skip: 0,
+			take: 10,
 		});
-		expect(result).toEqual([
-			{
-				jobRoleId: 1,
-				roleName: "Software Engineer",
-				location: "Remote",
-				capability,
-				band,
-				closingDate,
-				status,
-			},
-		]);
+		expect(result).toEqual({
+			jobRoles: [
+				{
+					jobRoleId: 1,
+					roleName: "Software Engineer",
+					location: "Remote",
+					capability,
+					band,
+					closingDate,
+					status,
+				},
+			],
+			page: 1,
+			pageSize: 10,
+			totalCount: 1,
+			totalPages: 1,
+		});
 	});
 
-	it("returns an empty array when there are no job roles", async () => {
+	it("skips to the requested page", async () => {
 		findMany.mockResolvedValue([]);
+		count.mockResolvedValue(25);
 
 		const service = new JobRoleService();
-		const result = await service.getJobRoles();
+		const result = await service.getJobRoles(3);
 
-		expect(result).toEqual([]);
+		expect(findMany).toHaveBeenCalledWith({
+			include: { capability: true, band: true, status: true },
+			skip: 20,
+			take: 10,
+		});
+		expect(result.totalPages).toBe(3);
+	});
+
+	it("returns an empty page when there are no job roles", async () => {
+		findMany.mockResolvedValue([]);
+		count.mockResolvedValue(0);
+
+		const service = new JobRoleService();
+		const result = await service.getJobRoles(1);
+
+		expect(result.jobRoles).toEqual([]);
+		expect(result.totalPages).toBe(0);
 	});
 
 	it("propagates errors thrown by the database query", async () => {
 		findMany.mockRejectedValue(new Error("db error"));
+		count.mockResolvedValue(0);
 
 		const service = new JobRoleService();
 
-		await expect(service.getJobRoles()).rejects.toThrow("db error");
+		await expect(service.getJobRoles(1)).rejects.toThrow("db error");
 	});
 });
 

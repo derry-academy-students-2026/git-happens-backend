@@ -71,7 +71,7 @@ describe("authRouter", () => {
 		});
 	});
 
-	it("forwards unexpected service errors to the error middleware", async () => {
+	it("returns a generic 500 for unexpected service errors", async () => {
 		registerUser.mockRejectedValue(new Error("boom"));
 
 		const response = await request(createApp()).post("/auth/register").send({
@@ -80,7 +80,7 @@ describe("authRouter", () => {
 		});
 
 		expect(response.status).toBe(500);
-		expect(response.body).toEqual({ message: "boom" });
+		expect(response.body).toEqual({ message: "Internal server error" });
 	});
 
 	it("POST /auth/login returns 200 and a token", async () => {

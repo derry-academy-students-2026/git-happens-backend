@@ -20,6 +20,14 @@ function createProtectedApp() {
 		res.status(200).json({ ok: true });
 	});
 
+	app.post("/applications/job-roles/:jobRoleId", (_req, res) => {
+		res.status(200).json({ ok: true });
+	});
+
+	app.post("/job-roles/:jobRoleId/applications", (_req, res) => {
+		res.status(200).json({ ok: true });
+	});
+
 	return app;
 }
 
@@ -83,8 +91,45 @@ describe("auth middleware", () => {
 
 		expect(response.status).toBe(403);
 		expect(response.body).toEqual({
-			message: "Users can only access list and information endpoints",
+			message:
+				"Users can only access list/info endpoints and submit job applications",
 		});
+	});
+
+	it("allows users to submit applications for specific roles", async () => {
+		const response = await request(createProtectedApp())
+			.post("/applications/job-roles/123")
+			.set("Authorization", `Bearer ${createToken("user")}`)
+			.send({});
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual({ ok: true });
+	});
+
+	it("allows users to submit applications through a mounted job role router", async () => {
+		const app = express();
+		app.use("/job-roles", authenticateToken, authorizeRecruitmentAccess);
+		app.post("/job-roles/:jobRoleId/applications", (_req, res) => {
+			res.status(200).json({ ok: true });
+		});
+
+		const response = await request(app)
+			.post("/job-roles/123/applications")
+			.set("Authorization", `Bearer ${createToken("user")}`)
+			.send({});
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual({ ok: true });
+	});
+
+	it("allows users to submit applications through the job role path", async () => {
+		const response = await request(createProtectedApp())
+			.post("/job-roles/123/applications")
+			.set("Authorization", `Bearer ${createToken("user")}`)
+			.send({});
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual({ ok: true });
 	});
 
 	it("allows admins to access write endpoints", async () => {

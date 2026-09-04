@@ -14,24 +14,24 @@ const jobRolesController = new JobRolesController(jobRoleService);
 jobRoleRouter.post(
 	"/",
 	validateBody(CreateJobRoleSchema, "Invalid job role details"),
-	(req, res, next) => jobRolesController.createJobRole(req, res, next),
+	(req, res) => jobRolesController.createJobRole(req, res),
 );
 
 jobRoleRouter.put(
 	"/:id",
 	validateBody(UpdateJobRoleSchema, "Invalid job role details"),
-	(req, res, next) => jobRolesController.updateJobRole(req, res, next),
+	(req, res) => jobRolesController.updateJobRole(req, res),
 );
 
 /**
  * Handles GET / requests.
- * Fetches all job roles from the controller and sends them in the response.
+ * Fetches a page of job roles (10 per page, selected via the `page` query param) and sends them in the response.
  * @param req - The Express request object.
  * @param res - The Express response object.
  * @param next - The next middleware function in the Express request-response cycle.
  */
-jobRoleRouter.get("/", (req, res, next) =>
-	jobRolesController.getJobRoles(req, res, next),
+jobRoleRouter.get("/", (req, res) =>
+	jobRolesController.getJobRoles(req, res),
 );
 
 /**
@@ -41,8 +41,8 @@ jobRoleRouter.get("/", (req, res, next) =>
  * @param res - The Express response object.
  * @param next - The next middleware function in the Express request-response cycle.
  */
-jobRoleRouter.get("/:id", (req, res, next) =>
-	jobRolesController.getJobRoleById(req, res, next),
+jobRoleRouter.get("/:id", (req, res) =>
+	jobRolesController.getJobRoleById(req, res),
 );
 
 export default jobRoleRouter;

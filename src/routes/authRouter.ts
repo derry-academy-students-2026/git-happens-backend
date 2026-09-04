@@ -6,15 +6,15 @@ const authRouter = Router();
 /**
  * Handles user registration.
  */
-authRouter.post("/register", (req, res, next) =>
-	authController.register(req, res, next),
+authRouter.post("/register", (req, res) =>
+	authController.register(req, res),
 );
 
 /**
  * Handles user login.
  */
-authRouter.post("/login", (req, res, next) =>
-	authController.login(req, res, next),
+authRouter.post("/login", (req, res) =>
+	authController.login(req, res),
 );
 
 export default authRouter;

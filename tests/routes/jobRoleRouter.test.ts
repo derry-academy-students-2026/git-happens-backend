@@ -17,6 +17,7 @@ const serviceMocks = vi.hoisted(() => ({
 	getJobRoles: vi.fn(),
 	getJobRoleById: vi.fn(),
 	createJobRole: vi.fn(),
+	applyForRole: vi.fn(),
 }));
 
 vi.mock("../../src/services/jobRoleService.js", () => ({
@@ -24,12 +25,13 @@ vi.mock("../../src/services/jobRoleService.js", () => ({
 		getJobRoles = serviceMocks.getJobRoles;
 		getJobRoleById = serviceMocks.getJobRoleById;
 		createJobRole = serviceMocks.createJobRole;
+		applyForRole = serviceMocks.applyForRole;
 	},
 }));
 
 import jobRoleRouter from "../../src/routes/jobRoleRouter.js";
 
-const { getJobRoles, getJobRoleById } = serviceMocks;
+const { getJobRoles, getJobRoleById, applyForRole } = serviceMocks;
 
 /**
  * creates an Express app with the jobRoleRouter mounted and an error handler for testing.
@@ -37,6 +39,11 @@ const { getJobRoles, getJobRoleById } = serviceMocks;
  */
 function createApp() {
 	const app = express();
+	app.use(express.json());
+	app.use((_req, res, next) => {
+		res.locals.auth = { sub: "7", role: "user" };
+		next();
+	});
 	app.use("/job-roles", jobRoleRouter);
 	app.use(
 		(
@@ -52,34 +59,67 @@ function createApp() {
 }
 
 /**
- * Test suite for the jobRoleRouter, covering both successful and error scenarios for the GET endpoints.
+ * Test suite for the jobRoleRouter, covering both successful and error
+ * scenarios for the GET endpoints.
  */
 describe("jobRoleRouter", () => {
 	beforeEach(() => {
 		getJobRoles.mockReset();
 		getJobRoleById.mockReset();
+		applyForRole.mockReset();
 	});
 
-	it("GET /job-roles returns the job roles from the service", async () => {
-		getJobRoles.mockResolvedValue([
-			{ jobRoleId: 1, roleName: "Software Engineer" },
-		]);
+	it("GET /job-roles returns the page of job roles from the service, defaulting to page 1", async () => {
+		getJobRoles.mockResolvedValue({
+			jobRoles: [{ jobRoleId: 1, roleName: "Software Engineer" }],
+			page: 1,
+			pageSize: 10,
+			totalCount: 1,
+			totalPages: 1,
+		});
 
 		const response = await request(createApp()).get("/job-roles");
 
+		expect(getJobRoles).toHaveBeenCalledWith(1);
 		expect(response.status).toBe(200);
-		expect(response.body).toEqual([
-			{ jobRoleId: 1, roleName: "Software Engineer" },
-		]);
+		expect(response.body).toEqual({
+			jobRoles: [{ jobRoleId: 1, roleName: "Software Engineer" }],
+			page: 1,
+			pageSize: 10,
+			totalCount: 1,
+			totalPages: 1,
+		});
 	});
 
-	it("forwards service errors to the error handler", async () => {
+	it("GET /job-roles?page=2 passes the page query param to the service", async () => {
+		getJobRoles.mockResolvedValue({
+			jobRoles: [],
+			page: 2,
+			pageSize: 10,
+			totalCount: 0,
+			totalPages: 0,
+		});
+
+		const response = await request(createApp()).get("/job-roles?page=2");
+
+		expect(getJobRoles).toHaveBeenCalledWith(2);
+		expect(response.status).toBe(200);
+	});
+
+	it("GET /job-roles?page=abc returns 400 for a non-numeric page", async () => {
+		const response = await request(createApp()).get("/job-roles?page=abc");
+
+		expect(response.status).toBe(400);
+		expect(getJobRoles).not.toHaveBeenCalled();
+	});
+
+	it("returns a generic 500 for service errors", async () => {
 		getJobRoles.mockRejectedValue(new Error("boom"));
 
 		const response = await request(createApp()).get("/job-roles");
 
 		expect(response.status).toBe(500);
-		expect(response.body).toEqual({ message: "boom" });
+		expect(response.body).toEqual({ message: "Internal server error" });
 	});
 
 	it("GET /job-roles/:id returns the job role from the service", async () => {
@@ -113,4 +153,5 @@ describe("jobRoleRouter", () => {
 		expect(response.status).toBe(404);
 		expect(response.body).toEqual({ message: "Job role not found" });
 	});
+
 });

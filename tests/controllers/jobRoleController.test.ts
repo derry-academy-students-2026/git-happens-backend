@@ -1,5 +1,16 @@
-import type { NextFunction, Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
+import { JobRolesController } from "../../src/controllers/jobRoleController.js";
+import { JobRoleValidationError } from "../../src/errors/customErrors.js";
+import { BandModel } from "../../src/models/bandModels.js";
+import { CapabilityModel } from "../../src/models/capabilityModels.js";
+import {
+	JobRoleDetailedResponseModel,
+	JobRoleResponseModel,
+	PaginatedJobRolesResponseModel,
+} from "../../src/models/jobRoleModels.js";
+import { StatusModel } from "../../src/models/statusModel.js";
+import type { JobRoleService } from "../../src/services/jobRoleService.js";
+import type { Request, Response } from "express";
 
 vi.mock("../../src/lib/logger.js", () => ({
 	default: {
@@ -9,17 +20,6 @@ vi.mock("../../src/lib/logger.js", () => ({
 		error: vi.fn(),
 	},
 }));
-
-import { JobRolesController } from "../../src/controllers/jobRoleController.js";
-import { JobRoleValidationError } from "../../src/errors/customErrors.js";
-import { BandModel } from "../../src/models/bandModels.js";
-import { CapabilityModel } from "../../src/models/capabilityModels.js";
-import {
-	JobRoleDetailedResponseModel,
-	JobRoleResponseModel,
-} from "../../src/models/jobRoleModels.js";
-import { StatusModel } from "../../src/models/statusModel.js";
-import type { JobRoleService } from "../../src/services/jobRoleService.js";
 
 const capability = new CapabilityModel(1, "Software Engineering");
 const band = new BandModel(2, "Band 3 - Senior");
@@ -83,6 +83,7 @@ function createMockResponse(): Response {
 	return {
 		json: vi.fn(),
 		status: vi.fn().mockReturnThis(),
+		locals: { params: { id: 2 }, authUserId: 7 },
 	} as unknown as Response;
 }
 
@@ -93,29 +94,67 @@ function createFakeUpdateService(
 }
 
 describe("JobRolesController.getJobRoles", () => {
-	it("responds with the job roles from the service", async () => {
-		const service = createFakeService(vi.fn().mockResolvedValue([jobRole]));
-		const controller = new JobRolesController(service);
+	const paginatedJobRoles = new PaginatedJobRolesResponseModel(
+		[jobRole],
+		1,
+		10,
+		1,
+		1,
+	);
+
+	it("responds with the page of job roles from the service, defaulting to page 1", async () => {
+		const getJobRoles = vi.fn().mockResolvedValue(paginatedJobRoles);
+		const controller = new JobRolesController(createFakeService(getJobRoles));
 		const res = createMockResponse();
-		const next = vi.fn() as unknown as NextFunction;
 
-		await controller.getJobRoles({} as Request, res, next);
+		await controller.getJobRoles({ query: {} } as unknown as Request, res);
 
-		expect(res.json).toHaveBeenCalledWith([jobRole]);
-		expect(next).not.toHaveBeenCalled();
+		expect(getJobRoles).toHaveBeenCalledWith(1);
+		expect(res.json).toHaveBeenCalledWith(paginatedJobRoles);
 	});
+
+	it("passes the requested page to the service", async () => {
+		const getJobRoles = vi.fn().mockResolvedValue(paginatedJobRoles);
+		const controller = new JobRolesController(createFakeService(getJobRoles));
+		const res = createMockResponse();
+
+		await controller.getJobRoles(
+			{ query: { page: "2" } } as unknown as Request,
+			res,
+		);
+
+		expect(getJobRoles).toHaveBeenCalledWith(2);
+	});
+
+	it.each(["abc", "0", "-1", "1.5"])(
+		"responds with 400 when page is %s",
+		async (page) => {
+			const getJobRoles = vi.fn();
+			const controller = new JobRolesController(
+				createFakeService(getJobRoles),
+			);
+			const res = createMockResponse();
+
+			await controller.getJobRoles(
+				{ query: { page } } as unknown as Request,
+				res,
+			);
+
+			expect(res.status).toHaveBeenCalledWith(400);
+			expect(getJobRoles).not.toHaveBeenCalled();
+		},
+	);
 
 	it("forwards errors to the error-handling middleware", async () => {
 		const error = new Error("boom");
 		const service = createFakeService(vi.fn().mockRejectedValue(error));
 		const controller = new JobRolesController(service);
 		const res = createMockResponse();
-		const next = vi.fn() as unknown as NextFunction;
 
-		await controller.getJobRoles({} as Request, res, next);
+		await controller.getJobRoles({ query: {} } as unknown as Request, res);
 
-		expect(next).toHaveBeenCalledWith(error);
-		expect(res.json).not.toHaveBeenCalled();
+		expect(res.status).toHaveBeenCalledWith(500);
+		expect(res.json).toHaveBeenCalledWith({ message: "Internal server error" });
 	});
 });
 
@@ -126,17 +165,14 @@ describe("JobRolesController.getJobRoleById", () => {
 			createFakeServiceById(getJobRoleById),
 		);
 		const res = createMockResponse();
-		const next = vi.fn() as unknown as NextFunction;
 
 		await controller.getJobRoleById(
 			{ params: { id: "1" } } as unknown as Request,
 			res,
-			next,
 		);
 
 		expect(getJobRoleById).toHaveBeenCalledWith(1);
 		expect(res.json).toHaveBeenCalledWith(detailedJobRole);
-		expect(next).not.toHaveBeenCalled();
 	});
 
 	it.each(["abc", "0", "-1", "1.5"])(
@@ -147,17 +183,14 @@ describe("JobRolesController.getJobRoleById", () => {
 				createFakeServiceById(getJobRoleById),
 			);
 			const res = createMockResponse();
-			const next = vi.fn() as unknown as NextFunction;
 
 			await controller.getJobRoleById(
 				{ params: { id } } as unknown as Request,
 				res,
-				next,
 			);
 
 			expect(res.status).toHaveBeenCalledWith(400);
 			expect(getJobRoleById).not.toHaveBeenCalled();
-			expect(next).not.toHaveBeenCalled();
 		},
 	);
 
@@ -166,35 +199,30 @@ describe("JobRolesController.getJobRoleById", () => {
 			createFakeServiceById(vi.fn().mockResolvedValue(null)),
 		);
 		const res = createMockResponse();
-		const next = vi.fn() as unknown as NextFunction;
 
 		await controller.getJobRoleById(
 			{ params: { id: "99" } } as unknown as Request,
 			res,
-			next,
 		);
 
 		expect(res.status).toHaveBeenCalledWith(404);
 		expect(res.json).toHaveBeenCalledWith({ message: "Job role not found" });
-		expect(next).not.toHaveBeenCalled();
 	});
 
-	it("forwards errors to the error-handling middleware", async () => {
+	it("returns 500 for unexpected errors", async () => {
 		const error = new Error("boom");
 		const controller = new JobRolesController(
 			createFakeServiceById(vi.fn().mockRejectedValue(error)),
 		);
 		const res = createMockResponse();
-		const next = vi.fn() as unknown as NextFunction;
 
 		await controller.getJobRoleById(
 			{ params: { id: "1" } } as unknown as Request,
 			res,
-			next,
 		);
 
-		expect(next).toHaveBeenCalledWith(error);
-		expect(res.json).not.toHaveBeenCalled();
+		expect(res.status).toHaveBeenCalledWith(500);
+		expect(res.json).toHaveBeenCalledWith({ message: "Internal server error" });
 	});
 });
 
@@ -206,12 +234,10 @@ describe("JobRolesController.createJobRole", () => {
 			createFakeCreateService(createJobRole),
 		);
 		const res = createMockResponse();
-		const next = vi.fn() as unknown as NextFunction;
 
 		await controller.createJobRole(
 			{ body: validatedBody } as unknown as Request,
 			res,
-			next,
 		);
 
 		expect(createJobRole).toHaveBeenCalledWith(validatedBody);
@@ -227,40 +253,35 @@ describe("JobRolesController.createJobRole", () => {
 			createFakeCreateService(createJobRole),
 		);
 		const res = createMockResponse();
-		const next = vi.fn() as unknown as NextFunction;
 
 		await controller.createJobRole(
 			{ body: validatedBody } as unknown as Request,
 			res,
-			next,
 		);
 
 		expect(res.status).toHaveBeenCalledWith(404);
 		expect(res.json).toHaveBeenCalledWith({ message: "Band not found" });
-		expect(next).not.toHaveBeenCalled();
 	});
 
-	it("forwards unexpected errors to the error handler", async () => {
+	it("returns 500 for unexpected errors", async () => {
 		const error = new Error("db down");
 		const createJobRole = vi.fn().mockRejectedValue(error);
 		const controller = new JobRolesController(
 			createFakeCreateService(createJobRole),
 		);
 		const res = createMockResponse();
-		const next = vi.fn() as unknown as NextFunction;
 
 		await controller.createJobRole(
 			{ body: validatedBody } as unknown as Request,
 			res,
-			next,
 		);
 
-		expect(next).toHaveBeenCalledWith(error);
-		expect(res.status).not.toHaveBeenCalled();
+		expect(res.status).toHaveBeenCalledWith(500);
+		expect(res.json).toHaveBeenCalledWith({ message: "Internal server error" });
 	});
 });
 
-	describe("JobRolesController.updateJobRole", () => {
+describe("JobRolesController.updateJobRole", () => {
 		it("updates a job role from a validated request body", async () => {
 			const updatedJobRole = {
 				...detailedJobRole,
@@ -271,7 +292,6 @@ describe("JobRolesController.createJobRole", () => {
 				createFakeUpdateService(updateJobRole),
 			);
 			const res = createMockResponse();
-			const next = vi.fn() as unknown as NextFunction;
 
 			await controller.updateJobRole(
 				{
@@ -279,12 +299,10 @@ describe("JobRolesController.createJobRole", () => {
 					body: validatedBody,
 				} as unknown as Request,
 				res,
-				next,
 			);
 
 			expect(updateJobRole).toHaveBeenCalledWith(1, validatedBody);
 			expect(res.json).toHaveBeenCalledWith(updatedJobRole);
-			expect(next).not.toHaveBeenCalled();
 		});
 
 		it.each(["abc", "0", "-1", "1.5"])(
@@ -295,7 +313,6 @@ describe("JobRolesController.createJobRole", () => {
 					createFakeUpdateService(updateJobRole),
 				);
 				const res = createMockResponse();
-				const next = vi.fn() as unknown as NextFunction;
 
 				await controller.updateJobRole(
 					{
@@ -303,7 +320,6 @@ describe("JobRolesController.createJobRole", () => {
 						body: validatedBody,
 					} as unknown as Request,
 					res,
-					next,
 				);
 
 				expect(res.status).toHaveBeenCalledWith(400);
@@ -311,7 +327,6 @@ describe("JobRolesController.createJobRole", () => {
 					error: "ID must be a positive integer",
 				});
 				expect(updateJobRole).not.toHaveBeenCalled();
-				expect(next).not.toHaveBeenCalled();
 			},
 		);
 
@@ -325,7 +340,6 @@ describe("JobRolesController.createJobRole", () => {
 				createFakeUpdateService(updateJobRole),
 			);
 			const res = createMockResponse();
-			const next = vi.fn() as unknown as NextFunction;
 
 			await controller.updateJobRole(
 				{
@@ -333,24 +347,21 @@ describe("JobRolesController.createJobRole", () => {
 					body: validatedBody,
 				} as unknown as Request,
 				res,
-				next,
 			);
 
 			expect(res.status).toHaveBeenCalledWith(404);
 			expect(res.json).toHaveBeenCalledWith({
 				message: "Job role not found",
 			});
-			expect(next).not.toHaveBeenCalled();
 		});
 
-		it("forwards unexpected errors to the error handler", async () => {
+		it("returns 500 for unexpected errors", async () => {
 			const error = new Error("db down");
 			const updateJobRole = vi.fn().mockRejectedValue(error);
 			const controller = new JobRolesController(
 				createFakeUpdateService(updateJobRole),
 			);
 			const res = createMockResponse();
-			const next = vi.fn() as unknown as NextFunction;
 
 			await controller.updateJobRole(
 				{
@@ -358,10 +369,11 @@ describe("JobRolesController.createJobRole", () => {
 					body: validatedBody,
 				} as unknown as Request,
 				res,
-				next,
 			);
 
-			expect(next).toHaveBeenCalledWith(error);
-			expect(res.status).not.toHaveBeenCalled();
+			expect(res.status).toHaveBeenCalledWith(500);
+			expect(res.json).toHaveBeenCalledWith({
+				message: "Internal server error",
+			});
 		});
 	});

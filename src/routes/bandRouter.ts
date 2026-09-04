@@ -6,8 +6,8 @@ const bandRouter = Router();
 const bandService = new BandService();
 const bandController = new BandController(bandService);
 
-bandRouter.get("/", (req, res, next) =>
-	bandController.getBands(req, res, next),
+bandRouter.get("/", (req, res) =>
+	bandController.getBands(req, res),
 );
 
 export default bandRouter;
