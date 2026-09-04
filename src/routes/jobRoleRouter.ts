@@ -4,7 +4,6 @@ import { validateBody } from "../middleware/validateRequest.js";
 import { JobRoleService } from "../services/jobRoleService.js";
 import {
 	JobRoleSchema,
-	JobRoleSchema,
 } from "../validation/jobRoleSchemas.js";
 
 const jobRoleRouter = Router();
