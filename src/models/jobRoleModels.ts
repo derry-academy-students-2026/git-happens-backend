@@ -64,3 +64,4 @@ export class JobRoleDetailedResponseModel {
 
 // Derived from the Zod schema so the request contract has a single definition.
 export type { CreateJobRoleRequestDto as CreateJobRoleRequestModel } from "../validation/jobRoleSchemas.js";
+export type { UpdateJobRoleRequestDto as UpdateJobRoleRequestModel } from "../validation/jobRoleSchemas.js";

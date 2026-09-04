@@ -1,4 +1,3 @@
-import type { Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
 import { JobRolesController } from "../../src/controllers/jobRoleController.js";
 import { JobRoleValidationError } from "../../src/errors/customErrors.js";
@@ -11,6 +10,7 @@ import {
 } from "../../src/models/jobRoleModels.js";
 import { StatusModel } from "../../src/models/statusModel.js";
 import type { JobRoleService } from "../../src/services/jobRoleService.js";
+import type { Request, Response } from "express";
 
 vi.mock("../../src/lib/logger.js", () => ({
 	default: {
@@ -47,6 +47,20 @@ const detailedJobRole = new JobRoleDetailedResponseModel(
 	3,
 );
 
+// The body reaching the controller has already been through validateBody,
+// so closingDate arrives as a Date. Validation itself is covered by
+// tests/middleware/validateRequest.test.ts and the integration suite.
+const validatedBody = {
+	roleName: "Senior Software Engineer",
+	location: "Remote",
+	capabilityId: 1,
+	bandId: 2,
+	closingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+	description: "Build software.",
+	responsibilities: "Write and review code.",
+	numberOfOpenPositions: 2,
+};
+
 function createFakeService(
 	getJobRoles: ReturnType<typeof vi.fn>,
 ): JobRoleService {
@@ -71,6 +85,12 @@ function createMockResponse(): Response {
 		status: vi.fn().mockReturnThis(),
 		locals: { params: { id: 2 }, authUserId: 7 },
 	} as unknown as Response;
+}
+
+function createFakeUpdateService(
+	updateJobRole: ReturnType<typeof vi.fn>,
+): JobRoleService {
+	return { updateJobRole } as unknown as JobRoleService;
 }
 
 describe("JobRolesController.getJobRoles", () => {
@@ -207,17 +227,6 @@ describe("JobRolesController.getJobRoleById", () => {
 });
 
 describe("JobRolesController.createJobRole", () => {
-	const validatedBody = {
-		roleName: "Senior Software Engineer",
-		location: "Remote",
-		capabilityId: 1,
-		bandId: 2,
-		closingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-		description: "Build software.",
-		responsibilities: "Write and review code.",
-		numberOfOpenPositions: 2,
-	};
-
 	it("creates a job role from a validated request body", async () => {
 		const createdJobRole = { jobRoleId: 4, roleName: validatedBody.roleName };
 		const createJobRole = vi.fn().mockResolvedValue(createdJobRole);
@@ -271,3 +280,100 @@ describe("JobRolesController.createJobRole", () => {
 		expect(res.json).toHaveBeenCalledWith({ message: "Internal server error" });
 	});
 });
+
+describe("JobRolesController.updateJobRole", () => {
+		it("updates a job role from a validated request body", async () => {
+			const updatedJobRole = {
+				...detailedJobRole,
+				roleName: "Senior Software Engineer",
+			};
+			const updateJobRole = vi.fn().mockResolvedValue(updatedJobRole);
+			const controller = new JobRolesController(
+				createFakeUpdateService(updateJobRole),
+			);
+			const res = createMockResponse();
+
+			await controller.updateJobRole(
+				{
+					params: { id: "1" },
+					body: validatedBody,
+				} as unknown as Request,
+				res,
+			);
+
+			expect(updateJobRole).toHaveBeenCalledWith(1, validatedBody);
+			expect(res.json).toHaveBeenCalledWith(updatedJobRole);
+		});
+
+		it.each(["abc", "0", "-1", "1.5"])(
+			"returns 400 for an invalid ID: %s",
+			async (id) => {
+				const updateJobRole = vi.fn();
+				const controller = new JobRolesController(
+					createFakeUpdateService(updateJobRole),
+				);
+				const res = createMockResponse();
+
+				await controller.updateJobRole(
+					{
+						params: { id },
+						body: validatedBody,
+					} as unknown as Request,
+					res,
+				);
+
+				expect(res.status).toHaveBeenCalledWith(400);
+				expect(res.json).toHaveBeenCalledWith({
+					error: "ID must be a positive integer",
+				});
+				expect(updateJobRole).not.toHaveBeenCalled();
+			},
+		);
+
+		it("returns the status carried by a JobRoleValidationError", async () => {
+			const updateJobRole = vi
+				.fn()
+				.mockRejectedValue(
+					new JobRoleValidationError("Job role not found", 404),
+				);
+			const controller = new JobRolesController(
+				createFakeUpdateService(updateJobRole),
+			);
+			const res = createMockResponse();
+
+			await controller.updateJobRole(
+				{
+					params: { id: "99" },
+					body: validatedBody,
+				} as unknown as Request,
+				res,
+			);
+
+			expect(res.status).toHaveBeenCalledWith(404);
+			expect(res.json).toHaveBeenCalledWith({
+				message: "Job role not found",
+			});
+		});
+
+		it("returns 500 for unexpected errors", async () => {
+			const error = new Error("db down");
+			const updateJobRole = vi.fn().mockRejectedValue(error);
+			const controller = new JobRolesController(
+				createFakeUpdateService(updateJobRole),
+			);
+			const res = createMockResponse();
+
+			await controller.updateJobRole(
+				{
+					params: { id: "1" },
+					body: validatedBody,
+				} as unknown as Request,
+				res,
+			);
+
+			expect(res.status).toHaveBeenCalledWith(500);
+			expect(res.json).toHaveBeenCalledWith({
+				message: "Internal server error",
+			});
+		});
+	});

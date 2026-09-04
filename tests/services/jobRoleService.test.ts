@@ -6,6 +6,7 @@ vi.mock("../../src/prismaClient.js", () => ({
 			findMany: vi.fn(),
 			findUnique: vi.fn(),
 			create: vi.fn(),
+			update: vi.fn(),
 			count: vi.fn(),
 		},
 		jobApplication: {
@@ -21,22 +22,22 @@ import { BandModel } from "../../src/models/bandModels.js";
 import { CapabilityModel } from "../../src/models/capabilityModels.js";
 import { StatusModel } from "../../src/models/statusModel.js";
 import prisma from "../../src/prismaClient.js";
-import {
-	JobRoleService,
-} from "../../src/services/jobRoleService.js";
+import { JobRoleService } from "../../src/services/jobRoleService.js";
 
 const findMany = prisma.jobRole.findMany as unknown as ReturnType<typeof vi.fn>;
 const findUnique = prisma.jobRole.findUnique as unknown as ReturnType<
 	typeof vi.fn
 >;
 const create = prisma.jobRole.create as unknown as ReturnType<typeof vi.fn>;
+const update = prisma.jobRole.update as unknown as ReturnType<typeof vi.fn>;
 const count = prisma.jobRole.count as unknown as ReturnType<typeof vi.fn>;
 const findCapability = prisma.capability.findUnique as unknown as ReturnType<
 	typeof vi.fn
 >;
 const findBand = prisma.band.findUnique as unknown as ReturnType<typeof vi.fn>;
-const findStatus = prisma.status
-	.findUnique as unknown as ReturnType<typeof vi.fn>;
+const findStatus = prisma.status.findUnique as unknown as ReturnType<
+	typeof vi.fn
+>;
 
 const capability = new CapabilityModel(1, "Software Engineering");
 const band = new BandModel(2, "Band 3 - Senior");
@@ -234,5 +235,106 @@ describe("JobRoleService.createJobRole", () => {
 			}),
 		).rejects.toThrow("Capability not found");
 		expect(create).not.toHaveBeenCalled();
+	});
+});
+
+describe("JobRoleService.updateJobRole", () => {
+	beforeEach(() => {
+		findCapability.mockReset();
+		findBand.mockReset();
+		findStatus.mockReset();
+		update.mockReset();
+	});
+
+	it("updates a job role successfully", async () => {
+		findUnique.mockResolvedValue(jobRoleRow);
+		findCapability.mockResolvedValue({ capabilityId: 1 });
+		findBand.mockResolvedValue({ bandId: 2 });
+		findStatus.mockResolvedValue({ statusId: 1 });
+
+		update.mockResolvedValue({
+			...jobRoleRow,
+			roleName: "Updated Role",
+			description: "Updated description.",
+			responsibilities: "Updated responsibilities.",
+			numberOfOpenPositions: 2,
+		});
+
+		const service = new JobRoleService();
+		const result = await service.updateJobRole(1, {
+			roleName: "Updated Role",
+			location: "Remote",
+			capabilityId: 1,
+			bandId: 2,
+			closingDate,
+			description: "Updated description.",
+			responsibilities: "Updated responsibilities.",
+			numberOfOpenPositions: 2,
+		});
+
+		expect(update).toHaveBeenCalledWith({
+			where: { jobRoleId: 1 },
+			data: expect.objectContaining({
+				roleName: "Updated Role",
+				location: "Remote",
+				capabilityId: 1,
+				bandId: 2,
+				closingDate,
+				description: "Updated description.",
+				responsibilities: "Updated responsibilities.",
+				numberOfOpenPositions: 2,
+			}),
+			include: { capability: true, band: true, status: true },
+		});
+		expect(result.roleName).toBe("Updated Role");
+	});
+
+	const updateRequest = {
+		roleName: "Updated Role",
+		location: "Remote",
+		capabilityId: 1,
+		bandId: 2,
+		closingDate,
+		description: "Updated description.",
+		responsibilities: "Updated responsibilities.",
+		numberOfOpenPositions: 2,
+	};
+
+	it.each([
+		{
+			description: "rejects an unknown capability",
+			errorMessage: "Capability not found",
+			setup: () => {
+				findUnique.mockResolvedValue(jobRoleRow);
+				findCapability.mockResolvedValue(null);
+				findBand.mockResolvedValue({ bandId: 2 });
+			},
+		},
+		{
+			description: "rejects an unknown band",
+			errorMessage: "Band not found",
+			setup: () => {
+				findUnique.mockResolvedValue(jobRoleRow);
+				findCapability.mockResolvedValue({ capabilityId: 1 });
+				findBand.mockResolvedValue(null);
+			},
+		},
+		{
+			description: "rejects an unknown job role",
+			errorMessage: "Job role not found",
+			setup: () => {
+				findUnique.mockResolvedValue(null);
+				findCapability.mockResolvedValue({ capabilityId: 1 });
+				findBand.mockResolvedValue({ bandId: 2 });
+			},
+		},
+	])("rejects $description", async ({ errorMessage, setup }) => {
+		setup();
+
+		await expect(
+			new JobRoleService().updateJobRole(1, updateRequest),
+		).rejects.toThrow(errorMessage);
+
+		expect(update).not.toHaveBeenCalled();
 	});
 });

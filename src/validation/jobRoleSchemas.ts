@@ -41,7 +41,7 @@ const futureClosingDate = z
 		message: "Closing date must be in the future",
 	});
 
-export const CreateJobRoleSchema = z.object({
+export const JobRoleSchema = z.object({
 	roleName: requiredText("Role name"),
 	location: requiredText("Location"),
 	capabilityId: positiveId("Capability ID"),
@@ -52,6 +52,7 @@ export const CreateJobRoleSchema = z.object({
 	numberOfOpenPositions: positiveId("Number of open positions"),
 });
 
+
 export const JobRoleIdParamSchema = z.object({
 	id: z.coerce
 		.number({ error: "ID is required" })
@@ -59,5 +60,6 @@ export const JobRoleIdParamSchema = z.object({
 		.positive("ID must be a positive integer"),
 });
 
-export type CreateJobRoleRequestDto = z.infer<typeof CreateJobRoleSchema>;
+export type CreateJobRoleRequestDto = z.infer<typeof JobRoleSchema>;
+export type UpdateJobRoleRequestDto = z.infer<typeof JobRoleSchema>;
 export type JobRoleIdParamDto = z.infer<typeof JobRoleIdParamSchema>;

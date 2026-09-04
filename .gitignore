@@ -61,3 +61,13 @@ infastructure/*.tfvars
 infastructure/*.tfvars.json
 infastructure/*_override.tf
 infastructure/*_override.tf.json
+
+# Terraform generated state, working directory, and local overrides
+my-infrastructure/.terraform/
+my-infrastructure/*.tfstate
+my-infrastructure/*.tfstate.*
+my-infrastructure/crash.log
+my-infrastructure/*.tfvars
+my-infrastructure/*.tfvars.json
+my-infrastructure/*_override.tf
+my-infrastructure/*_override.tf.json
