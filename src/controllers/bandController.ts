@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 import logger from "../lib/logger.js";
 import type { BandService } from "../services/bandService.js";
 
@@ -13,13 +13,8 @@ export class BandController {
 	 * Fetches all bands from the service and sends them in the response.
 	 * @param _req - The Express request object. Not used in this method.
 	 * @param res - The Express response object.
-	 * @param next - The next middleware function in the Express request-response cycle.
 	 */
-	async getBands(
-		_req: Request,
-		res: Response,
-		next: NextFunction,
-	): Promise<void> {
+	async getBands(_req: Request, res: Response): Promise<void> {
 		try {
 			const bands = await this.service.getBands();
 			logger.debug(`Fetched ${bands.length} band(s)`);
@@ -27,7 +22,7 @@ export class BandController {
 		} catch (error) {
 			const err = error instanceof Error ? error : new Error(String(error));
 			logger.error(`Failed to fetch bands: ${err.stack ?? err.message}`);
-			next(err);
+			res.status(500).json({ message: "Internal server error" });
 		}
 	}
 }

@@ -11,7 +11,7 @@ const jobRolesController = new JobRolesController(jobRoleService);
 jobRoleRouter.post(
 	"/",
 	validateBody(CreateJobRoleSchema, "Invalid job role details"),
-	(req, res, next) => jobRolesController.createJobRole(req, res, next),
+	(req, res) => jobRolesController.createJobRole(req, res),
 );
 
 /**
@@ -21,8 +21,8 @@ jobRoleRouter.post(
  * @param res - The Express response object.
  * @param next - The next middleware function in the Express request-response cycle.
  */
-jobRoleRouter.get("/", (req, res, next) =>
-	jobRolesController.getJobRoles(req, res, next),
+jobRoleRouter.get("/", (req, res) =>
+	jobRolesController.getJobRoles(req, res),
 );
 
 /**
@@ -32,8 +32,8 @@ jobRoleRouter.get("/", (req, res, next) =>
  * @param res - The Express response object.
  * @param next - The next middleware function in the Express request-response cycle.
  */
-jobRoleRouter.get("/:id", (req, res, next) =>
-	jobRolesController.getJobRoleById(req, res, next),
+jobRoleRouter.get("/:id", (req, res) =>
+	jobRolesController.getJobRoleById(req, res),
 );
 
 export default jobRoleRouter;
