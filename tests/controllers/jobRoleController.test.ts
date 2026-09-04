@@ -7,6 +7,7 @@ import { CapabilityModel } from "../../src/models/capabilityModels.js";
 import {
 	JobRoleDetailedResponseModel,
 	JobRoleResponseModel,
+	PaginatedJobRolesResponseModel,
 } from "../../src/models/jobRoleModels.js";
 import { StatusModel } from "../../src/models/statusModel.js";
 import type { JobRoleService } from "../../src/services/jobRoleService.js";
@@ -73,23 +74,64 @@ function createMockResponse(): Response {
 }
 
 describe("JobRolesController.getJobRoles", () => {
-	it("responds with the job roles from the service", async () => {
-		const service = createFakeService(vi.fn().mockResolvedValue([jobRole]));
-		const controller = new JobRolesController(service);
+	const paginatedJobRoles = new PaginatedJobRolesResponseModel(
+		[jobRole],
+		1,
+		10,
+		1,
+		1,
+	);
+
+	it("responds with the page of job roles from the service, defaulting to page 1", async () => {
+		const getJobRoles = vi.fn().mockResolvedValue(paginatedJobRoles);
+		const controller = new JobRolesController(createFakeService(getJobRoles));
 		const res = createMockResponse();
 
-		await controller.getJobRoles({} as Request, res);
+		await controller.getJobRoles({ query: {} } as unknown as Request, res);
 
-		expect(res.json).toHaveBeenCalledWith([jobRole]);
+		expect(getJobRoles).toHaveBeenCalledWith(1);
+		expect(res.json).toHaveBeenCalledWith(paginatedJobRoles);
 	});
 
-	it("returns 500 for unexpected errors", async () => {
+	it("passes the requested page to the service", async () => {
+		const getJobRoles = vi.fn().mockResolvedValue(paginatedJobRoles);
+		const controller = new JobRolesController(createFakeService(getJobRoles));
+		const res = createMockResponse();
+
+		await controller.getJobRoles(
+			{ query: { page: "2" } } as unknown as Request,
+			res,
+		);
+
+		expect(getJobRoles).toHaveBeenCalledWith(2);
+	});
+
+	it.each(["abc", "0", "-1", "1.5"])(
+		"responds with 400 when page is %s",
+		async (page) => {
+			const getJobRoles = vi.fn();
+			const controller = new JobRolesController(
+				createFakeService(getJobRoles),
+			);
+			const res = createMockResponse();
+
+			await controller.getJobRoles(
+				{ query: { page } } as unknown as Request,
+				res,
+			);
+
+			expect(res.status).toHaveBeenCalledWith(400);
+			expect(getJobRoles).not.toHaveBeenCalled();
+		},
+	);
+
+	it("forwards errors to the error-handling middleware", async () => {
 		const error = new Error("boom");
 		const service = createFakeService(vi.fn().mockRejectedValue(error));
 		const controller = new JobRolesController(service);
 		const res = createMockResponse();
 
-		await controller.getJobRoles({} as Request, res);
+		await controller.getJobRoles({ query: {} } as unknown as Request, res);
 
 		expect(res.status).toHaveBeenCalledWith(500);
 		expect(res.json).toHaveBeenCalledWith({ message: "Internal server error" });

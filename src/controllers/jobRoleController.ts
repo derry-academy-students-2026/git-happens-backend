@@ -12,15 +12,29 @@ export class JobRolesController {
 	constructor(private service: JobRoleService) {}
 
 	/**
-	 * Fetches all job roles from the service and sends them in the response.
+	 * Fetches a page of job roles from the service and sends them in the response.
+	 * The page number is read from the `page` query parameter (defaults to 1).
+	 * Responds with 400 if `page` is present but not a positive integer.
 	 * If an error occurs, it logs the error and passes it to the next middleware.
-	 * @param _req - The Express request object. Not used in this method.
+	 * @param req - The Express request object, whose `page` query parameter selects the page to fetch.
 	 * @param res - The Express response object.
 	 */
-	async getJobRoles(_req: Request, res: Response): Promise<void> {
+	async getJobRoles(
+		req: Request,
+		res: Response,
+	): Promise<void> {
 		try {
-			const jobRoles = await this.service.getJobRoles();
-			logger.debug(`Fetched ${jobRoles.length} job role(s)`);
+			const rawPage = req.query.page;
+			const page = rawPage === undefined ? 1 : Number(rawPage);
+
+			if (!Number.isInteger(page) || page <= 0) {
+				logger.warn(`Rejected job roles request with invalid page: ${rawPage}`);
+				res.status(400).json({ error: "page must be a positive integer" });
+				return;
+			}
+
+			const jobRoles = await this.service.getJobRoles(page);
+			logger.debug(`Fetched ${jobRoles.jobRoles.length} job role(s)`);
 			res.json(jobRoles);
 		} catch (error) {
 			const err = error instanceof Error ? error : new Error(String(error));

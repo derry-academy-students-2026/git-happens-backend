@@ -106,6 +106,7 @@ vi.mock("../../src/prismaClient.js", () => {
 					},
 				),
 				findMany: vi.fn(async () => db.jobRoles.map(withRelations)),
+				count: vi.fn(async () => db.jobRoles.length),
 			},
 			user: {
 				findUnique: vi.fn(
@@ -221,8 +222,8 @@ describe("POST /job-roles (add new role integration)", () => {
 			.set("Authorization", `Bearer ${createToken("admin")}`);
 
 		expect(listResponse.status).toBe(200);
-		expect(listResponse.body).toHaveLength(1);
-		expect(listResponse.body[0]).toMatchObject({
+		expect(listResponse.body.jobRoles).toHaveLength(1);
+		expect(listResponse.body.jobRoles[0]).toMatchObject({
 			jobRoleId: 1,
 			roleName: "Data Engineer",
 		});

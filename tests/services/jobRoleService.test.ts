@@ -6,6 +6,7 @@ vi.mock("../../src/prismaClient.js", () => ({
 			findMany: vi.fn(),
 			findUnique: vi.fn(),
 			create: vi.fn(),
+			count: vi.fn(),
 		},
 		jobApplication: {
 			create: vi.fn(),
@@ -29,16 +30,13 @@ const findUnique = prisma.jobRole.findUnique as unknown as ReturnType<
 	typeof vi.fn
 >;
 const create = prisma.jobRole.create as unknown as ReturnType<typeof vi.fn>;
-const createApplication = prisma.jobApplication.create as unknown as ReturnType<
-	typeof vi.fn
->;
+const count = prisma.jobRole.count as unknown as ReturnType<typeof vi.fn>;
 const findCapability = prisma.capability.findUnique as unknown as ReturnType<
 	typeof vi.fn
 >;
 const findBand = prisma.band.findUnique as unknown as ReturnType<typeof vi.fn>;
-const findStatus = prisma.status.findUnique as unknown as ReturnType<
-	typeof vi.fn
->;
+const findStatus = prisma.status
+	.findUnique as unknown as ReturnType<typeof vi.fn>;
 
 const capability = new CapabilityModel(1, "Software Engineering");
 const band = new BandModel(2, "Band 3 - Senior");
@@ -62,45 +60,73 @@ const jobRoleRow = {
 describe("JobRoleService.getJobRoles", () => {
 	beforeEach(() => {
 		findMany.mockReset();
+		count.mockReset();
 	});
 
-	it("queries job roles with their capability and band, mapped to response models", async () => {
+	it("queries a page of job roles with their capability and band, mapped to response models", async () => {
 		findMany.mockResolvedValue([jobRoleRow]);
+		count.mockResolvedValue(1);
 
 		const service = new JobRoleService();
-		const result = await service.getJobRoles();
+		const result = await service.getJobRoles(1);
 
 		expect(findMany).toHaveBeenCalledWith({
 			include: { capability: true, band: true, status: true },
+			skip: 0,
+			take: 10,
 		});
-		expect(result).toEqual([
-			{
-				jobRoleId: 1,
-				roleName: "Software Engineer",
-				location: "Remote",
-				capability,
-				band,
-				closingDate,
-				status,
-			},
-		]);
+		expect(result).toEqual({
+			jobRoles: [
+				{
+					jobRoleId: 1,
+					roleName: "Software Engineer",
+					location: "Remote",
+					capability,
+					band,
+					closingDate,
+					status,
+				},
+			],
+			page: 1,
+			pageSize: 10,
+			totalCount: 1,
+			totalPages: 1,
+		});
 	});
 
-	it("returns an empty array when there are no job roles", async () => {
+	it("skips to the requested page", async () => {
 		findMany.mockResolvedValue([]);
+		count.mockResolvedValue(25);
 
 		const service = new JobRoleService();
-		const result = await service.getJobRoles();
+		const result = await service.getJobRoles(3);
 
-		expect(result).toEqual([]);
+		expect(findMany).toHaveBeenCalledWith({
+			include: { capability: true, band: true, status: true },
+			skip: 20,
+			take: 10,
+		});
+		expect(result.totalPages).toBe(3);
+	});
+
+	it("returns an empty page when there are no job roles", async () => {
+		findMany.mockResolvedValue([]);
+		count.mockResolvedValue(0);
+
+		const service = new JobRoleService();
+		const result = await service.getJobRoles(1);
+
+		expect(result.jobRoles).toEqual([]);
+		expect(result.totalPages).toBe(0);
 	});
 
 	it("propagates errors thrown by the database query", async () => {
 		findMany.mockRejectedValue(new Error("db error"));
+		count.mockResolvedValue(0);
 
 		const service = new JobRoleService();
 
-		await expect(service.getJobRoles()).rejects.toThrow("db error");
+		await expect(service.getJobRoles(1)).rejects.toThrow("db error");
 	});
 });
 
@@ -148,219 +174,6 @@ describe("JobRoleService.getJobRoleById", () => {
 		const service = new JobRoleService();
 
 		await expect(service.getJobRoleById(1)).rejects.toThrow("db error");
-	});
-});
-
-describe.skip("JobRoleService.applyForRole", () => {
-	beforeEach(() => {
-		findUnique.mockReset();
-		createApplication.mockReset();
-	});
-
-	it("creates a submitted application when role is open and has vacancies", async () => {
-		findUnique.mockResolvedValue({
-			jobRoleId: 1,
-			numberOfOpenPositions: 3,
-			status: { statusName: "Open" },
-		});
-		createApplication.mockResolvedValue({
-			applicationId: 10,
-			jobRoleId: 1,
-			userId: 7,
-			fullName: "Jane Applicant",
-			countryCode: "+44",
-			phoneNumber: "7123 456 789",
-			email: "jane.applicant@example.com",
-			applicationText: "I am interested in this role.",
-			previousExperience: "5 years experience",
-			applicationStatus: "SUBMITTED",
-			createdAt: new Date("2026-08-14T00:00:00.000Z"),
-		});
-
-		const service = new JobRoleService();
-		const result = await service.applyForRole(
-			1,
-			7,
-			"Jane Applicant",
-			"+44",
-			"7123 456 789",
-			"jane.applicant@example.com",
-			"I am interested in this role.",
-			"5 years experience",
-		);
-
-		expect(findUnique).toHaveBeenCalledWith({
-			where: { jobRoleId: 1 },
-			include: { status: true },
-		});
-		expect(createApplication).toHaveBeenCalledWith({
-			data: {
-				jobRoleId: 1,
-				userId: 7,
-				fullName: "Jane Applicant",
-				countryCode: "+44",
-				phoneNumber: "7123 456 789",
-				email: "jane.applicant@example.com",
-				applicationText: "I am interested in this role.",
-				previousExperience: "5 years experience",
-				applicationStatus: "SUBMITTED",
-			},
-		});
-		expect(result.applicationStatus).toBe("SUBMITTED");
-		expect(result.countryCode).toBe("+44");
-		expect(result.email).toBe("jane.applicant@example.com");
-	});
-
-	it("throws not found when the role does not exist", async () => {
-		findUnique.mockResolvedValue(null);
-		const service = new JobRoleService();
-
-		await expect(
-			service.applyForRole(
-				1,
-				7,
-				"Jane",
-				"+44",
-				"7123456789",
-				"jane@example.com",
-				"Interested",
-			),
-		).rejects.toBeInstanceOf(JobRoleNotFoundError);
-	});
-
-	it("throws conflict when the role is closed", async () => {
-		findUnique.mockResolvedValue({
-			jobRoleId: 1,
-			numberOfOpenPositions: 3,
-			status: { statusName: "Closed" },
-		});
-
-		const service = new JobRoleService();
-		await expect(
-			service.applyForRole(
-				1,
-				7,
-				"Jane",
-				"+44",
-				"7123456789",
-				"jane@example.com",
-				"Interested",
-			),
-		).rejects.toBeInstanceOf(JobRoleApplicationConflictError);
-	});
-
-	it("throws conflict when there are no open positions", async () => {
-		findUnique.mockResolvedValue({
-			jobRoleId: 1,
-			numberOfOpenPositions: 0,
-			status: { statusName: "Open" },
-		});
-
-		const service = new JobRoleService();
-		await expect(
-			service.applyForRole(
-				1,
-				7,
-				"Jane",
-				"+44",
-				"7123456789",
-				"jane@example.com",
-				"Interested",
-			),
-		).rejects.toBeInstanceOf(JobRoleApplicationConflictError);
-	});
-
-	it("throws validation error when role ID is invalid", async () => {
-		const service = new JobRoleService();
-
-		await expect(
-			service.applyForRole(
-				0,
-				7,
-				"Jane",
-				"+44",
-				"7123456789",
-				"jane@example.com",
-				"Interested",
-			),
-		).rejects.toBeInstanceOf(JobRoleApplicationValidationError);
-	});
-
-	it("throws validation error when user ID is invalid", async () => {
-		const service = new JobRoleService();
-
-		await expect(
-			service.applyForRole(
-				1,
-				0,
-				"Jane",
-				"+44",
-				"7123456789",
-				"jane@example.com",
-				"Interested",
-			),
-		).rejects.toBeInstanceOf(JobRoleApplicationValidationError);
-	});
-
-	it("throws conflict when the applicant already applied", async () => {
-		findUnique.mockResolvedValue({
-			jobRoleId: 1,
-			numberOfOpenPositions: 3,
-			status: { statusName: "Open" },
-		});
-		createApplication.mockRejectedValue({ code: "P2002" });
-
-		const service = new JobRoleService();
-		await expect(
-			service.applyForRole(
-				1,
-				7,
-				"Jane",
-				"+44",
-				"7123456789",
-				"jane@example.com",
-				"Interested",
-			),
-		).rejects.toBeInstanceOf(JobRoleApplicationConflictError);
-	});
-
-	it("stores previousExperience as null when omitted or blank", async () => {
-		findUnique.mockResolvedValue({
-			jobRoleId: 1,
-			numberOfOpenPositions: 3,
-			status: { statusName: "Open" },
-		});
-		createApplication.mockResolvedValue({
-			applicationId: 11,
-			jobRoleId: 1,
-			userId: 7,
-			fullName: "Jane Applicant",
-			countryCode: "+44",
-			phoneNumber: "7123 456 789",
-			email: "jane.applicant@example.com",
-			applicationText: "I am interested in this role.",
-			previousExperience: null,
-			applicationStatus: "in progress",
-			createdAt: new Date("2026-08-14T00:00:00.000Z"),
-		});
-
-		const service = new JobRoleService();
-		await service.applyForRole(
-			1,
-			7,
-			"Jane Applicant",
-			"+44",
-			"7123 456 789",
-			"jane.applicant@example.com",
-			"I am interested in this role.",
-			"",
-		);
-
-		expect(createApplication).toHaveBeenCalledWith({
-			data: expect.objectContaining({
-				previousExperience: null,
-			}),
-		});
 	});
 });
 

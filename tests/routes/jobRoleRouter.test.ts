@@ -69,17 +69,48 @@ describe("jobRoleRouter", () => {
 		applyForRole.mockReset();
 	});
 
-	it("GET /job-roles returns the job roles from the service", async () => {
-		getJobRoles.mockResolvedValue([
-			{ jobRoleId: 1, roleName: "Software Engineer" },
-		]);
+	it("GET /job-roles returns the page of job roles from the service, defaulting to page 1", async () => {
+		getJobRoles.mockResolvedValue({
+			jobRoles: [{ jobRoleId: 1, roleName: "Software Engineer" }],
+			page: 1,
+			pageSize: 10,
+			totalCount: 1,
+			totalPages: 1,
+		});
 
 		const response = await request(createApp()).get("/job-roles");
 
+		expect(getJobRoles).toHaveBeenCalledWith(1);
 		expect(response.status).toBe(200);
-		expect(response.body).toEqual([
-			{ jobRoleId: 1, roleName: "Software Engineer" },
-		]);
+		expect(response.body).toEqual({
+			jobRoles: [{ jobRoleId: 1, roleName: "Software Engineer" }],
+			page: 1,
+			pageSize: 10,
+			totalCount: 1,
+			totalPages: 1,
+		});
+	});
+
+	it("GET /job-roles?page=2 passes the page query param to the service", async () => {
+		getJobRoles.mockResolvedValue({
+			jobRoles: [],
+			page: 2,
+			pageSize: 10,
+			totalCount: 0,
+			totalPages: 0,
+		});
+
+		const response = await request(createApp()).get("/job-roles?page=2");
+
+		expect(getJobRoles).toHaveBeenCalledWith(2);
+		expect(response.status).toBe(200);
+	});
+
+	it("GET /job-roles?page=abc returns 400 for a non-numeric page", async () => {
+		const response = await request(createApp()).get("/job-roles?page=abc");
+
+		expect(response.status).toBe(400);
+		expect(getJobRoles).not.toHaveBeenCalled();
 	});
 
 	it("returns a generic 500 for service errors", async () => {
