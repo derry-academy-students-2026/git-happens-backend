@@ -10,6 +10,7 @@ import {
 	PaginatedJobRolesResponseModel,
 	type CreateJobRoleRequestModel,
 	type JobRoleDetailedResponseModel,
+	type UpdateJobRoleRequestModel,
 } from "../models/jobRoleModels.js";
 import prisma from "../prismaClient.js";
 
@@ -112,6 +113,48 @@ export class JobRoleService {
 		});
 
 		logger.info(`Created job role ${jobRole.jobRoleId}`);
+		return mapJobRoleToDetailedResponseModel(mapPrismaJobRoleToModel(jobRole));
+	}
+
+	/** Updates the editable fields of an existing job role. */
+	async updateJobRole(
+		jobRoleId: number,
+		request: UpdateJobRoleRequestModel,
+	): Promise<JobRoleDetailedResponseModel> {
+		const [existingJobRole, capability, band] = await Promise.all([
+			prisma.jobRole.findUnique({ where: { jobRoleId } }),
+			prisma.capability.findUnique({
+				where: { capabilityId: request.capabilityId },
+			}),
+			prisma.band.findUnique({ where: { bandId: request.bandId } }),
+		]);
+
+		if (!existingJobRole) {
+			throw new JobRoleValidationError("Job role not found", 404);
+		}
+		if (!capability) {
+			throw new JobRoleValidationError("Capability not found", 404);
+		}
+		if (!band) {
+			throw new JobRoleValidationError("Band not found", 404);
+		}
+
+		const jobRole = await prisma.jobRole.update({
+			where: { jobRoleId },
+			data: {
+				roleName: request.roleName,
+				location: request.location,
+				capabilityId: capability.capabilityId,
+				bandId: band.bandId,
+				closingDate: request.closingDate,
+				description: request.description,
+				responsibilities: request.responsibilities,
+				numberOfOpenPositions: request.numberOfOpenPositions,
+			},
+			include: jobRoleInclude,
+		});
+
+		logger.info(`Updated job role ${jobRoleId}`);
 		return mapJobRoleToDetailedResponseModel(mapPrismaJobRoleToModel(jobRole));
 	}
 }

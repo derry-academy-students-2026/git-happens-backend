@@ -2,7 +2,10 @@ import type { Request, Response } from "express";
 import { JobRoleValidationError } from "../errors/customErrors.js";
 import logger from "../lib/logger.js";
 import type { JobRoleService } from "../services/jobRoleService.js";
-import type { CreateJobRoleRequestDto } from "../validation/jobRoleSchemas.js";
+import type {
+	CreateJobRoleRequestDto,
+	UpdateJobRoleRequestDto,
+} from "../validation/jobRoleSchemas.js";
 
 /**
  * Controller class for handling job role-related requests.
@@ -87,7 +90,6 @@ export class JobRolesController {
 	 * Creates a new job role from a body already validated by `validateBody`.
 	 * @param req - The Express request object, whose body holds the new job role.
 	 * @param res - The Express response object.
-	 * @param next - The next middleware function in the Express request-response cycle.
 	 */
 	async createJobRole(
 		req: Request,
@@ -105,6 +107,35 @@ export class JobRolesController {
 			}
 			const err = error instanceof Error ? error : new Error(String(error));
 			logger.error(`Failed to create job role: ${err.stack ?? err.message}`);
+			res.status(500).json({ message: "Internal server error" });
+		}
+	}
+
+	/** Updates an existing job role from a body already validated by `validateBody`. */
+	async updateJobRole(
+		req: Request,
+		res: Response,
+	): Promise<void> {
+		try {
+			const jobRoleId = Number(req.params.id);
+
+			if (!Number.isInteger(jobRoleId) || jobRoleId <= 0) {
+				res.status(400).json({ error: "ID must be a positive integer" });
+				return;
+			}
+
+			const jobRole = await this.service.updateJobRole(
+				jobRoleId,
+				req.body as UpdateJobRoleRequestDto,
+			);
+			res.json(jobRole);
+		} catch (error) {
+			if (error instanceof JobRoleValidationError) {
+				res.status(error.statusCode).json({ message: error.message });
+				return;
+			}
+			const err = error instanceof Error ? error : new Error(String(error));
+			logger.error(`Failed to update job role: ${err.stack ?? err.message}`);
 			res.status(500).json({ message: "Internal server error" });
 		}
 	}
