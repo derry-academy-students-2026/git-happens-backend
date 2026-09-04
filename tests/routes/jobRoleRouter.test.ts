@@ -17,6 +17,7 @@ const serviceMocks = vi.hoisted(() => ({
 	getJobRoles: vi.fn(),
 	getJobRoleById: vi.fn(),
 	createJobRole: vi.fn(),
+	applyForRole: vi.fn(),
 }));
 
 vi.mock("../../src/services/jobRoleService.js", () => ({
@@ -24,12 +25,13 @@ vi.mock("../../src/services/jobRoleService.js", () => ({
 		getJobRoles = serviceMocks.getJobRoles;
 		getJobRoleById = serviceMocks.getJobRoleById;
 		createJobRole = serviceMocks.createJobRole;
+		applyForRole = serviceMocks.applyForRole;
 	},
 }));
 
 import jobRoleRouter from "../../src/routes/jobRoleRouter.js";
 
-const { getJobRoles, getJobRoleById } = serviceMocks;
+const { getJobRoles, getJobRoleById, applyForRole } = serviceMocks;
 
 /**
  * creates an Express app with the jobRoleRouter mounted and an error handler for testing.
@@ -37,6 +39,11 @@ const { getJobRoles, getJobRoleById } = serviceMocks;
  */
 function createApp() {
 	const app = express();
+	app.use(express.json());
+	app.use((_req, res, next) => {
+		res.locals.auth = { sub: "7", role: "user" };
+		next();
+	});
 	app.use("/job-roles", jobRoleRouter);
 	app.use(
 		(
@@ -52,12 +59,14 @@ function createApp() {
 }
 
 /**
- * Test suite for the jobRoleRouter, covering both successful and error scenarios for the GET endpoints.
+ * Test suite for the jobRoleRouter, covering both successful and error
+ * scenarios for the GET endpoints.
  */
 describe("jobRoleRouter", () => {
 	beforeEach(() => {
 		getJobRoles.mockReset();
 		getJobRoleById.mockReset();
+		applyForRole.mockReset();
 	});
 
 	it("GET /job-roles returns the page of job roles from the service, defaulting to page 1", async () => {
@@ -104,13 +113,13 @@ describe("jobRoleRouter", () => {
 		expect(getJobRoles).not.toHaveBeenCalled();
 	});
 
-	it("forwards service errors to the error handler", async () => {
+	it("returns a generic 500 for service errors", async () => {
 		getJobRoles.mockRejectedValue(new Error("boom"));
 
 		const response = await request(createApp()).get("/job-roles");
 
 		expect(response.status).toBe(500);
-		expect(response.body).toEqual({ message: "boom" });
+		expect(response.body).toEqual({ message: "Internal server error" });
 	});
 
 	it("GET /job-roles/:id returns the job role from the service", async () => {
@@ -144,4 +153,5 @@ describe("jobRoleRouter", () => {
 		expect(response.status).toBe(404);
 		expect(response.body).toEqual({ message: "Job role not found" });
 	});
+
 });

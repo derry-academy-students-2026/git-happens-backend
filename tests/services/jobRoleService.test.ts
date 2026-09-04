@@ -8,6 +8,9 @@ vi.mock("../../src/prismaClient.js", () => ({
 			create: vi.fn(),
 			count: vi.fn(),
 		},
+		jobApplication: {
+			create: vi.fn(),
+		},
 		capability: { findUnique: vi.fn() },
 		band: { findUnique: vi.fn() },
 		status: { findUnique: vi.fn() },
@@ -18,7 +21,9 @@ import { BandModel } from "../../src/models/bandModels.js";
 import { CapabilityModel } from "../../src/models/capabilityModels.js";
 import { StatusModel } from "../../src/models/statusModel.js";
 import prisma from "../../src/prismaClient.js";
-import { JobRoleService } from "../../src/services/jobRoleService.js";
+import {
+	JobRoleService,
+} from "../../src/services/jobRoleService.js";
 
 const findMany = prisma.jobRole.findMany as unknown as ReturnType<typeof vi.fn>;
 const findUnique = prisma.jobRole.findUnique as unknown as ReturnType<
@@ -26,8 +31,9 @@ const findUnique = prisma.jobRole.findUnique as unknown as ReturnType<
 >;
 const create = prisma.jobRole.create as unknown as ReturnType<typeof vi.fn>;
 const count = prisma.jobRole.count as unknown as ReturnType<typeof vi.fn>;
-const findCapability = prisma.capability
-	.findUnique as unknown as ReturnType<typeof vi.fn>;
+const findCapability = prisma.capability.findUnique as unknown as ReturnType<
+	typeof vi.fn
+>;
 const findBand = prisma.band.findUnique as unknown as ReturnType<typeof vi.fn>;
 const findStatus = prisma.status
 	.findUnique as unknown as ReturnType<typeof vi.fn>;

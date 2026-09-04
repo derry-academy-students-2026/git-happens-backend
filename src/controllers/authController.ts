@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 import logger from "../lib/logger.js";
 import { maskEmail } from "../lib/maskEmail.js";
 import { UserRequestModel } from "../models/authModels.js";
@@ -16,13 +16,11 @@ export class AuthController {
 	 * Handles user registration requests.
 	 * @param req Express request carrying user registration details.
 	 * @param res Express response used to send API output.
-	 * @param next Express next middleware callback for unexpected failures.
 	 * @returns Promise that resolves when the response is sent.
 	 */
 	async register(
 		req: Request,
 		res: Response,
-		next: NextFunction,
 	): Promise<void> {
 		try {
 			logger.info("Registration request received");
@@ -52,7 +50,7 @@ export class AuthController {
 			}
 
 			logger.error("Registration failed with unexpected error", { error });
-			next(error);
+			res.status(500).json({ message: "Internal server error" });
 		}
 	}
 
@@ -60,10 +58,9 @@ export class AuthController {
 	 * Handles user login requests and returns a JWT on success.
 	 * @param req Express request carrying login details.
 	 * @param res Express response used to send API output.
-	 * @param next Express next middleware callback for unexpected failures.
 	 * @returns Promise that resolves when the response is sent.
 	 */
-	async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+	async login(req: Request, res: Response): Promise<void> {
 		try {
 			logger.info("Login request received");
 			const requestModel = new UserRequestModel(
@@ -87,7 +84,7 @@ export class AuthController {
 			}
 
 			logger.error("Login failed with unexpected error", { error });
-			next(error);
+			res.status(500).json({ message: "Internal server error" });
 		}
 	}
 }

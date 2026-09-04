@@ -1,11 +1,10 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 import { JobRoleValidationError } from "../errors/customErrors.js";
 import logger from "../lib/logger.js";
 import type { JobRoleService } from "../services/jobRoleService.js";
 import type { CreateJobRoleRequestDto } from "../validation/jobRoleSchemas.js";
 
 /**
- * @param service - The job role service instance used to fetch job role data.
  * Controller class for handling job role-related requests.
  * It interacts with the jobRoleService to fetch job role data and sends appropriate responses.
  */
@@ -19,12 +18,10 @@ export class JobRolesController {
 	 * If an error occurs, it logs the error and passes it to the next middleware.
 	 * @param req - The Express request object, whose `page` query parameter selects the page to fetch.
 	 * @param res - The Express response object.
-	 * @param next - The next middleware function in the Express request-response cycle.
 	 */
 	async getJobRoles(
 		req: Request,
 		res: Response,
-		next: NextFunction,
 	): Promise<void> {
 		try {
 			const rawPage = req.query.page;
@@ -42,7 +39,7 @@ export class JobRolesController {
 		} catch (error) {
 			const err = error instanceof Error ? error : new Error(String(error));
 			logger.error(`Failed to fetch job roles: ${err.stack ?? err.message}`);
-			next(err);
+			res.status(500).json({ message: "Internal server error" });
 		}
 	}
 
@@ -52,12 +49,10 @@ export class JobRolesController {
 	 * has that ID, and otherwise the job role itself.
 	 * @param req - The Express request object, whose `id` path parameter holds the job role ID.
 	 * @param res - The Express response object.
-	 * @param next - The next middleware function in the Express request-response cycle.
 	 */
 	async getJobRoleById(
 		req: Request,
 		res: Response,
-		next: NextFunction,
 	): Promise<void> {
 		try {
 			const jobRoleId = Number(req.params.id);
@@ -84,7 +79,7 @@ export class JobRolesController {
 			logger.error(
 				`Failed to fetch job role by ID: ${err.stack ?? err.message}`,
 			);
-			next(err);
+			res.status(500).json({ message: "Internal server error" });
 		}
 	}
 
@@ -97,7 +92,6 @@ export class JobRolesController {
 	async createJobRole(
 		req: Request,
 		res: Response,
-		next: NextFunction,
 	): Promise<void> {
 		try {
 			const jobRole = await this.service.createJobRole(
@@ -109,7 +103,9 @@ export class JobRolesController {
 				res.status(error.statusCode).json({ message: error.message });
 				return;
 			}
-			next(error instanceof Error ? error : new Error(String(error)));
+			const err = error instanceof Error ? error : new Error(String(error));
+			logger.error(`Failed to create job role: ${err.stack ?? err.message}`);
+			res.status(500).json({ message: "Internal server error" });
 		}
 	}
 }

@@ -7,6 +7,7 @@ import {
 	authorizeRecruitmentAccess,
 } from "./middleware/auth.js";
 import authRouter from "./routes/authRouter.js";
+import applicationRouter from "./routes/applicationRouter.js";
 import bandRouter from "./routes/bandRouter.js";
 import capabilityRouter from "./routes/capabilityRouter.js";
 import jobRoleRouter from "./routes/jobRoleRouter.js";
@@ -27,10 +28,28 @@ app.use(
 );
 app.use("/bands", authenticateToken, authorizeRecruitmentAccess, bandRouter);
 app.use(
+	"/applications",
+	authenticateToken,
+	authorizeRecruitmentAccess,
+	applicationRouter,
+);
+app.use(
+	"/job-roles",
+	authenticateToken,
+	authorizeRecruitmentAccess,
+	applicationRouter,
+);
+app.use(
 	"/job-roles",
 	authenticateToken,
 	authorizeRecruitmentAccess,
 	jobRoleRouter,
+);
+app.use(
+	"/job-roles",
+	authenticateToken,
+	authorizeRecruitmentAccess,
+	applicationRouter,
 );
 
 logger.info("Express app initialized");
