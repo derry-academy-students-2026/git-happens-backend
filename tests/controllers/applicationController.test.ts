@@ -96,3 +96,65 @@ describe("ApplicationController.submitJobApplication", () => {
 		expect(response.json).toHaveBeenCalledWith({ message: "Internal server error" });
 	});
 });
+
+describe("ApplicationController.getApplicationsByUserId", () => {
+	it("responds with applications for the authenticated user", async () => {
+		const applications = [{ applicationId: 10, roleName: "Software Engineer" }];
+		const getApplicationsByUserId = vi.fn().mockResolvedValue(applications);
+		const controller = new ApplicationController({
+			getApplicationsByUserId,
+		} as unknown as ApplicationService);
+		const response = createResponse();
+		response.locals.params = { userId: 7 };
+
+		await controller.getApplicationsByUserId({} as Request, response);
+
+		expect(getApplicationsByUserId).toHaveBeenCalledWith(7);
+		expect(response.json).toHaveBeenCalledWith(applications);
+	});
+
+	it("returns 403 without querying when the requested user is different", async () => {
+		const getApplicationsByUserId = vi.fn();
+		const controller = new ApplicationController({
+			getApplicationsByUserId,
+		} as unknown as ApplicationService);
+		const response = createResponse();
+		response.locals.params = { userId: 8 };
+
+		await controller.getApplicationsByUserId({} as Request, response);
+
+		expect(response.status).toHaveBeenCalledWith(403);
+		expect(response.json).toHaveBeenCalledWith({ message: "Forbidden" });
+		expect(getApplicationsByUserId).not.toHaveBeenCalled();
+	});
+
+	it("returns the status from an application service error", async () => {
+		const controller = new ApplicationController({
+			getApplicationsByUserId: vi
+				.fn()
+				.mockRejectedValue(new ApplicationValidationError("Invalid authenticated user")),
+		} as unknown as ApplicationService);
+		const response = createResponse();
+		response.locals.params = { userId: 7 };
+
+		await controller.getApplicationsByUserId({} as Request, response);
+
+		expect(response.status).toHaveBeenCalledWith(400);
+		expect(response.json).toHaveBeenCalledWith({
+			message: "Invalid authenticated user",
+		});
+	});
+
+	it("returns 500 for unexpected service errors", async () => {
+		const controller = new ApplicationController({
+			getApplicationsByUserId: vi.fn().mockRejectedValue(new Error("boom")),
+		} as unknown as ApplicationService);
+		const response = createResponse();
+		response.locals.params = { userId: 7 };
+
+		await controller.getApplicationsByUserId({} as Request, response);
+
+		expect(response.status).toHaveBeenCalledWith(500);
+		expect(response.json).toHaveBeenCalledWith({ message: "Internal server error" });
+	});
+});

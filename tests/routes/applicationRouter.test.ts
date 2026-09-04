@@ -4,11 +4,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const serviceMocks = vi.hoisted(() => ({
 	submitJobApplication: vi.fn(),
+	getApplicationsByUserId: vi.fn(),
 }));
 
 vi.mock("../../src/services/applicationService.js", () => ({
 	ApplicationService: class {
 		submitJobApplication = serviceMocks.submitJobApplication;
+		getApplicationsByUserId = serviceMocks.getApplicationsByUserId;
 	},
 }));
 
@@ -29,6 +31,7 @@ function createApp() {
 describe("applicationRouter", () => {
 	beforeEach(() => {
 		serviceMocks.submitJobApplication.mockReset();
+		serviceMocks.getApplicationsByUserId.mockReset();
 	});
 
 	it("submits an application at the frontend API path", async () => {
@@ -80,5 +83,23 @@ describe("applicationRouter", () => {
 			7,
 			expect.objectContaining({ fullName: "Jane Applicant" }),
 		);
+	});
+
+	it("lists the authenticated user's applications at GET /applications/users/:userId", async () => {
+		const applications = [{ applicationId: 10, roleName: "Software Engineer" }];
+		serviceMocks.getApplicationsByUserId.mockResolvedValue(applications);
+
+		const response = await request(createApp()).get("/applications/users/7");
+
+		expect(response.status).toBe(200);
+		expect(serviceMocks.getApplicationsByUserId).toHaveBeenCalledWith(7);
+		expect(response.body).toEqual(applications);
+	});
+
+	it("rejects requests for another user's applications", async () => {
+		const response = await request(createApp()).get("/applications/users/8");
+
+		expect(response.status).toBe(403);
+		expect(serviceMocks.getApplicationsByUserId).not.toHaveBeenCalled();
 	});
 });

@@ -6,7 +6,10 @@ import {
 import { ApplicationStatus } from "../generated/prisma/client.js";
 import logger from "../lib/logger.js";
 import type { ApplyForRoleRequestModel } from "../models/jobApplicationModels.js";
-import { JobApplicationResponseModel } from "../models/jobApplicationModels.js";
+import {
+	JobApplicationResponseModel,
+	JobApplicationListResponseModel,
+} from "../models/jobApplicationModels.js";
 import prisma from "../prismaClient.js";
 
 export class ApplicationService {
@@ -85,7 +88,7 @@ export class ApplicationService {
 						request.previousExperience.trim().length > 0
 							? request.previousExperience
 							: null,
-					applicationStatus: ApplicationStatus.SUBMITTED,
+					applicationStatus: ApplicationStatus.IN_PROGRESS,
 				},
 			});
 
@@ -128,5 +131,45 @@ export class ApplicationService {
 			});
 			throw error;
 		}
+	}
+
+	/**
+	 * Lists a user's job applications, most recent first.
+	 * @param userId ID of the applicant whose applications are requested.
+	 * @returns The user's job applications, including the applied-for role's name and location.
+	 * @throws ApplicationValidationError when the user ID is invalid.
+	 */
+	async getApplicationsByUserId(
+		userId: number,
+	): Promise<JobApplicationListResponseModel[]> {
+		if (!Number.isInteger(userId) || userId <= 0) {
+			logger.warn("Rejected job application list request with invalid user ID", {
+				userId,
+			});
+			throw new ApplicationValidationError("Invalid authenticated user");
+		}
+
+		const applications = await prisma.jobApplication.findMany({
+			where: { userId },
+			include: { jobRole: true },
+			orderBy: { createdAt: "desc" },
+		});
+
+		logger.debug("Queried job applications for user", {
+			userId,
+			count: applications.length,
+		});
+
+		return applications.map(
+			(application) =>
+				new JobApplicationListResponseModel(
+					application.applicationId,
+					application.jobRoleId,
+					application.jobRole.roleName,
+					application.jobRole.location,
+					application.applicationStatus,
+					application.createdAt,
+				),
+		);
 	}
 }

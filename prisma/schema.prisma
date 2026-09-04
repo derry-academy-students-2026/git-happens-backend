@@ -67,12 +67,9 @@ model User {
 }
 
 enum ApplicationStatus {
-  SUBMITTED
-  UNDER_REVIEW
-  INTERVIEW
-  OFFERED
+  IN_PROGRESS
+  HIRED
   REJECTED
-  WITHDRAWN
 }
 
 model JobApplication {
@@ -85,7 +82,7 @@ model JobApplication {
   email             String   @default("")
   applicationText   String
   previousExperience String?
-  applicationStatus ApplicationStatus @default(SUBMITTED)
+  applicationStatus ApplicationStatus @default(IN_PROGRESS)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

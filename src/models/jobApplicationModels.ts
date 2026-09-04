@@ -26,3 +26,14 @@ export class JobApplicationResponseModel {
 		public readonly createdAt: Date,
 	) {}
 }
+
+export class JobApplicationListResponseModel {
+	constructor(
+		public readonly applicationId: number,
+		public readonly jobRoleId: number,
+		public readonly roleName: string,
+		public readonly location: string,
+		public readonly applicationStatus: ApplicationStatus,
+		public readonly createdAt: Date,
+	) {}
+}

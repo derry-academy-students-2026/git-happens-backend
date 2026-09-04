@@ -8,12 +8,23 @@ import {
 import { ApplicationService } from "../services/applicationService.js";
 import {
 	ApplicationJobRoleIdParamSchema,
+	ApplicationUserIdParamSchema,
 	ApplyForRoleSchema,
 } from "../validation/applicationSchemas.js";
 
 const applicationRouter = Router();
 const applicationService = new ApplicationService();
 const applicationController = new ApplicationController(applicationService);
+
+/**
+ * Handles GET /users/:userId requests by listing that user's job applications.
+ */
+applicationRouter.get(
+	"/users/:userId",
+	validateParams(ApplicationUserIdParamSchema),
+	validateAuthenticatedUserId(),
+	(req, res) => applicationController.getApplicationsByUserId(req, res),
+);
 
 /**
  * Handles POST /job-roles/:jobRoleId requests by submitting an application.
