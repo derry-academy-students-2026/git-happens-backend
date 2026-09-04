@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../src/prismaClient.js", () => ({
 	default: {
 		jobRole: { findUnique: vi.fn() },
-		jobApplication: { create: vi.fn() },
+		jobApplication: { create: vi.fn(), findMany: vi.fn() },
 	},
 }));
 
@@ -18,6 +18,9 @@ import { ApplicationService } from "../../src/services/applicationService.js";
 
 const findUnique = prisma.jobRole.findUnique as unknown as ReturnType<typeof vi.fn>;
 const create = prisma.jobApplication.create as unknown as ReturnType<typeof vi.fn>;
+const findMany = prisma.jobApplication.findMany as unknown as ReturnType<
+	typeof vi.fn
+>;
 const request = new ApplyForRoleRequestModel(
 	"Jane Applicant",
 	"+44",
@@ -48,16 +51,16 @@ describe("ApplicationService.submitJobApplication", () => {
 			email: request.email,
 			applicationText: request.applicationText,
 			previousExperience: null,
-			applicationStatus: "SUBMITTED",
+			applicationStatus: "IN_PROGRESS",
 			createdAt: new Date(),
 		});
 
 		const result = await new ApplicationService().submitJobApplication(1, 7, request);
 
 		expect(create).toHaveBeenCalledWith({
-			data: expect.objectContaining({ applicationStatus: "SUBMITTED" }),
+			data: expect.objectContaining({ applicationStatus: "IN_PROGRESS" }),
 		});
-		expect(result.applicationStatus).toBe("SUBMITTED");
+		expect(result.applicationStatus).toBe("IN_PROGRESS");
 	});
 
 	it("rejects an application for a missing role", async () => {
@@ -185,5 +188,56 @@ describe("ApplicationService.submitJobApplication", () => {
 				previousExperience: "Five years of relevant experience",
 			}),
 		});
+	});
+});
+
+describe("ApplicationService.getApplicationsByUserId", () => {
+	beforeEach(() => {
+		findMany.mockReset();
+	});
+
+	it("lists the user's applications, most recent first, with role details", async () => {
+		findMany.mockResolvedValue([
+			{
+				applicationId: 10,
+				jobRoleId: 1,
+				applicationStatus: "IN_PROGRESS",
+				createdAt: new Date("2026-08-14T00:00:00.000Z"),
+				jobRole: { roleName: "Software Engineer", location: "Remote" },
+			},
+		]);
+
+		const result = await new ApplicationService().getApplicationsByUserId(7);
+
+		expect(findMany).toHaveBeenCalledWith({
+			where: { userId: 7 },
+			include: { jobRole: true },
+			orderBy: { createdAt: "desc" },
+		});
+		expect(result).toEqual([
+			{
+				applicationId: 10,
+				jobRoleId: 1,
+				roleName: "Software Engineer",
+				location: "Remote",
+				applicationStatus: "IN_PROGRESS",
+				createdAt: new Date("2026-08-14T00:00:00.000Z"),
+			},
+		]);
+	});
+
+	it("returns an empty list when the user has no applications", async () => {
+		findMany.mockResolvedValue([]);
+
+		const result = await new ApplicationService().getApplicationsByUserId(7);
+
+		expect(result).toEqual([]);
+	});
+
+	it("rejects an invalid user ID before querying Prisma", async () => {
+		await expect(
+			new ApplicationService().getApplicationsByUserId(0),
+		).rejects.toBeInstanceOf(ApplicationValidationError);
+		expect(findMany).not.toHaveBeenCalled();
 	});
 });

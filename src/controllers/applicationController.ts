@@ -60,4 +60,41 @@ export class ApplicationController {
 			res.status(500).json({ message: "Internal server error" });
 		}
 	}
+
+	/**
+	 * Lists job applications for the requested authenticated user.
+	 * @param _req Request object; validated path data is stored in `res.locals`.
+	 * @param res Response containing validated path and authentication values.
+	 */
+	async getApplicationsByUserId(_req: Request, res: Response): Promise<void> {
+		try {
+			const { userId } = res.locals.params as { userId: number };
+			const authUserId = res.locals.authUserId as number;
+
+			if (userId !== authUserId) {
+				logger.warn("Rejected job application list request for another user", {
+					userId,
+					authUserId,
+				});
+				res.status(403).json({ message: "Forbidden" });
+				return;
+			}
+
+			const applications = await this.service.getApplicationsByUserId(userId);
+
+			logger.debug(
+				`Fetched ${applications.length} job application(s) for user ${userId}`,
+			);
+			res.json(applications);
+		} catch (error) {
+			if (error instanceof ApplicationValidationError) {
+				res.status(error.statusCode).json({ message: error.message });
+				return;
+			}
+
+			const err = error instanceof Error ? error : new Error(String(error));
+			logger.error(`Failed to fetch job applications: ${err.stack ?? err.message}`);
+			res.status(500).json({ message: "Internal server error" });
+		}
+	}
 }

@@ -35,4 +35,11 @@ export const ApplicationJobRoleIdParamSchema = z.object({
 		.positive("Job role ID must be a positive integer"),
 });
 
+export const ApplicationUserIdParamSchema = z.object({
+	userId: z.coerce
+		.number({ error: "User ID is required" })
+		.int("User ID must be a positive integer")
+		.positive("User ID must be a positive integer"),
+});
+
 export type ApplyForRoleRequestDto = z.infer<typeof ApplyForRoleSchema>;
