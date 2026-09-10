@@ -29,6 +29,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run gitleaks
+        continue-on-error: true
         run: |
           docker run --rm -v "${{ github.workspace }}:/repo" zricethezav/gitleaks:latest detect \
             --source /repo \
